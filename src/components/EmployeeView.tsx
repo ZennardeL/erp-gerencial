@@ -36,6 +36,52 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
   const [selectedEmployeeForDocs, setSelectedEmployeeForDocs] = useState<Employee | null>(null);
   const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ title: string; fileName: string; fileDataUrl: string } | null>(null);
+
+  const getBlobUrl = (dataUrl: string): string => {
+    try {
+      if (dataUrl.startsWith('blob:') || dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) {
+        return dataUrl;
+      }
+      const parts = dataUrl.split(',');
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error('Erro ao converter para Blob:', e);
+      return dataUrl;
+    }
+  };
+
+  const handleOpenPreview = (doc: EmployeeDocument) => {
+    if (!doc.fileDataUrl) return;
+    setPreviewDoc({
+      title: doc.title,
+      fileName: doc.fileName,
+      fileDataUrl: doc.fileDataUrl
+    });
+  };
+
+  const handleDownloadDocument = (fileDataUrl: string, fileName: string) => {
+    try {
+      const blobUrl = getBlobUrl(fileDataUrl);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName || 'documento.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('Erro ao baixar documento:', e);
+    }
+  };
 
   // Form State for Employee
   const [empForm, setEmpForm] = useState({
@@ -873,23 +919,22 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           {doc.fileDataUrl && (
                             <>
-                              <a
-                                href={doc.fileDataUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition border border-slate-700"
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPreview(doc)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition border border-slate-700 cursor-pointer"
                               >
                                 <Eye className="w-3.5 h-3.5 text-indigo-400" />
                                 Visualizar
-                              </a>
-                              <a
-                                href={doc.fileDataUrl}
-                                download={doc.fileName}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold rounded-lg transition border border-indigo-500/30"
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadDocument(doc.fileDataUrl, doc.fileName)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold rounded-lg transition border border-indigo-500/30 cursor-pointer"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 Baixar
-                              </a>
+                              </button>
                             </>
                           )}
 
@@ -1025,6 +1070,77 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENT PREVIEW MODAL (IN-APP PDF & IMAGE VIEWER) */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl h-[92vh] overflow-hidden shadow-2xl flex flex-col">
+            {/* Preview Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-white truncate">{previewDoc.title}</h3>
+                  <p className="text-xs text-slate-400 truncate">{previewDoc.fileName}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blobUrl = getBlobUrl(previewDoc.fileDataUrl);
+                    window.open(blobUrl, '_blank');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition border border-slate-700 cursor-pointer"
+                  title="Abrir em nova aba do navegador"
+                >
+                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="hidden sm:inline">Abrir em Nova Aba</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadDocument(previewDoc.fileDataUrl, previewDoc.fileName)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-md cursor-pointer"
+                  title="Baixar arquivo"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Baixar PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition ml-2 cursor-pointer"
+                  title="Fechar visualização"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Body */}
+            <div className="flex-1 bg-slate-950 p-2 overflow-hidden flex items-center justify-center">
+              {previewDoc.fileDataUrl.startsWith('data:image/') ? (
+                <img
+                  src={previewDoc.fileDataUrl}
+                  alt={previewDoc.title}
+                  className="max-h-full max-w-full object-contain rounded-lg"
+                />
+              ) : (
+                <iframe
+                  src={getBlobUrl(previewDoc.fileDataUrl)}
+                  title={previewDoc.title}
+                  className="w-full h-full rounded-lg border border-slate-800 bg-white"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
