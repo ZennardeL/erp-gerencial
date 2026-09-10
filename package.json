@@ -1,0 +1,38 @@
+{
+  "name": "erp-recepcao",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "ERP Desktop para recepção de academia com sincronização automática de Excel via OneDrive",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run vite\"",
+    "vite": "vite",
+    "build:react": "tsc && vite build",
+    "server": "tsx watch src/server/index.ts",
+    "start": "node dist/server/index.js",
+    "electron:dev": "concurrently \"npm run server\" \"vite\" \"electron .\"",
+    "electron:build": "npm run build:react && electron-builder"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "lucide-react": "^0.475.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment & Local DB
+.env
+.env.local
+backups/
+database_erp.json
+database_erp_*.json
+*.xlsx
+*.xlsm
+
+# Executables and desktop runners
+node.exe
+*.vbs
+*.bat
+electron/
+
+# Temporary scratch & audit scripts
+*.cjs
+apply_physical_counts.js
+check_entries_detail.js
+check_waters.js
+inspect_file.js
+inspect_stock_issue.js
+summary.js
+test_etapa*.js
+update_stock.js
+full_audit_report.json
+*.log
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
