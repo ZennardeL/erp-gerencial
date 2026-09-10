@@ -12,7 +12,7 @@ interface CleaningInventoryViewProps {
   products: CleaningProduct[];
   onAddProduct: (prod: Partial<CleaningProduct>) => Promise<void>;
   onEditProduct: (prod: Partial<CleaningProduct>) => Promise<void>;
-  onDeleteProduct: (id: string) => Promise<void>;
+  onDeleteProduct: (idOrIds: string | string[]) => Promise<void>;
 }
 
 export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
@@ -63,6 +63,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
   const currentStockList = useMemo(() => {
     const map: { [key: string]: {
       id: string;
+      allIds: string[];
       name: string;
       category: CleaningProduct['category'];
       unit: CleaningProduct['unit'];
@@ -79,6 +80,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
       if (!map[key]) {
         map[key] = {
           id: p.id,
+          allIds: [p.id],
           name: p.name,
           category: p.category,
           unit: p.unit,
@@ -89,6 +91,8 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
           supplier: p.supplier || 'Rosana Galvão / Distribuidora',
           rawItem: p
         };
+      } else {
+        map[key].allIds.push(p.id);
       }
     });
 
@@ -214,9 +218,9 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
     setShowModal(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Tem certeza que deseja excluir o produto de limpeza "${name}"?`)) {
-      await onDeleteProduct(id);
+  const handleDelete = async (idOrIds: string | string[], name: string) => {
+    if (window.confirm(`Tem certeza que deseja excluir o produto "${name}" do estoque da academia?`)) {
+      await onDeleteProduct(idOrIds);
     }
   };
 
@@ -224,7 +228,9 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
   const monthlyData = useMemo(() => {
     const map: { [key: string]: number } = {};
     sortedProducts.forEach(p => {
-      const dateStr = p.arrivalDate ? p.arrivalDate.substring(0, 7) : 'Desconhecido';
+      const date = p.arrivalDate || (p.createdAt ? p.createdAt.split('T')[0] : '');
+      if (!date) return;
+      const dateStr = date.substring(0, 7);
       const cost = p.totalValue || (p.currentQuantity * p.unitCost);
       map[dateStr] = (map[dateStr] || 0) + cost;
     });
@@ -577,10 +583,17 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
                       </button>
                       <button
                         onClick={() => handleOpenEdit(item.rawItem)}
-                        className="p-1.5 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-400 rounded-lg transition"
+                        className="w-7 h-7 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-400 rounded-lg flex items-center justify-center transition"
                         title="Editar Detalhes"
                       >
-                        <Settings2 className="w-4 h-4" />
+                        <Settings2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.allIds, item.name)}
+                        className="w-7 h-7 bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-400 rounded-lg flex items-center justify-center transition"
+                        title="Excluir produto do estoque"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -725,10 +738,10 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
 
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={monthlyData} margin={{ top: 10, right: 15, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                     <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} />
-                    <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => `R$${val}`} />
+                    <YAxis width={65} stroke="#94a3b8" fontSize={11} tickFormatter={(val) => `R$ ${val}`} />
                     <Tooltip
                       contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                       formatter={(val: any) => [`R$ ${Number(val).toFixed(2)}`, 'Total Nota']}
@@ -790,10 +803,10 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
               <div className="h-44 w-full">
                 {priceHistoryData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={priceHistoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <LineChart data={priceHistoryData} margin={{ top: 10, right: 15, left: 10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                       <XAxis dataKey="formattedDate" stroke="#94a3b8" fontSize={10} />
-                      <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `R$${val}`} />
+                      <YAxis width={65} stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `R$ ${val}`} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                         formatter={(val: any) => [`R$ ${Number(val).toFixed(2)}`, 'Custo Unitário']}
@@ -1059,20 +1072,37 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition"
-                >
-                  {editingItem ? 'Salvar Alterações' : 'Salvar Entrada'}
-                </button>
+              <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+                {editingItem ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const itemInStock = currentStockList.find(c => c.rawItem.id === editingItem.id || c.name.toLowerCase() === editingItem.name.toLowerCase());
+                      const ids = itemInStock ? itemInStock.allIds : [editingItem.id];
+                      setShowModal(false);
+                      handleDelete(ids, editingItem.name);
+                    }}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/30 transition flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Excluir do Estoque
+                  </button>
+                ) : <div />}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition"
+                  >
+                    {editingItem ? 'Salvar Alterações' : 'Salvar Entrada'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

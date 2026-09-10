@@ -281,11 +281,11 @@ export default function App() {
     }
   };
 
-  const handleDeleteCleaningProduct = async (id: string) => {
-    if (!window.confirm('Excluir este produto de limpeza?')) return;
+  const handleDeleteCleaningProduct = async (idOrIds: string | string[]) => {
     try {
-      await deleteCleaningProduct(id);
-      setCleaningProducts(prev => prev.filter(p => p.id !== id));
+      await deleteCleaningProduct(idOrIds);
+      const idsToDelete = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+      setCleaningProducts(prev => prev.filter(p => !idsToDelete.includes(p.id)));
     } catch (e) {
       console.error(e);
       alert('Erro ao excluir produto');

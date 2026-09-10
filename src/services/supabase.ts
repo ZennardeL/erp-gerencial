@@ -550,7 +550,7 @@ export async function getCleaningProducts(): Promise<CleaningProduct[]> {
       minQuantity: parseFloat(p.min_quantity) || 0,
       unitCost,
       totalValue: currentQuantity * unitCost,
-      arrivalDate: p.last_purchase_date || '',
+      arrivalDate: p.last_purchase_date || (p.created_at ? p.created_at.split('T')[0] : ''),
       supplier: p.supplier || '',
       createdAt: p.created_at
     };
@@ -608,9 +608,14 @@ export async function updateCleaningProduct(prod: Partial<CleaningProduct>): Pro
   return prod as CleaningProduct;
 }
 
-export async function deleteCleaningProduct(id: string): Promise<void> {
-  const { error } = await supabase.from('erp_cleaning_products').delete().eq('id', id);
-  if (error) throw error;
+export async function deleteCleaningProduct(idOrIds: string | string[]): Promise<void> {
+  if (Array.isArray(idOrIds)) {
+    const { error } = await supabase.from('erp_cleaning_products').delete().in('id', idOrIds);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('erp_cleaning_products').delete().eq('id', idOrIds);
+    if (error) throw error;
+  }
 }
 
 // --- 5. MAINTENANCE RECORDS ---
@@ -635,7 +640,7 @@ export async function getMaintenanceRecords(): Promise<MaintenanceRecord[]> {
       title: m.title,
       maintenanceType: (m.type === 'EQUIPAMENTO' ? 'EQUIPAMENTOS' : (m.type || 'PREDIAL')) as any,
       category: (m.nature === 'CORRETIVA' ? 'CORRETIVA' : 'PREVENTIVA') as any,
-      executionDate: m.service_date || '',
+      executionDate: m.service_date || (m.created_at ? m.created_at.split('T')[0] : ''),
       executedBy: m.performed_by || '',
       materialCost,
       laborCost,

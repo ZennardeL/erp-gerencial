@@ -43,7 +43,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
     const map: { [key: string]: { dateKey: string; label: string; total: number; count: number } } = {};
 
     records.forEach(r => {
-      const dateKey = r.executionDate ? r.executionDate.substring(0, 7) : '2026-07';
+      const dateKey = r.executionDate ? r.executionDate.substring(0, 7) : (r.createdAt ? r.createdAt.substring(0, 7) : '2026-07');
       const [year, month] = dateKey.split('-');
       const monthNames = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -72,7 +72,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
   const currentKPIs = useMemo(() => {
     const filteredRecords = records.filter(r => {
       if (selectedMonthFilter === 'ALL') return true;
-      const rMonth = r.executionDate ? r.executionDate.substring(0, 7) : '';
+      const rMonth = r.executionDate ? r.executionDate.substring(0, 7) : (r.createdAt ? r.createdAt.substring(0, 7) : '');
       return rMonth === selectedMonthFilter;
     });
 
@@ -101,11 +101,15 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
         r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.executedBy.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = filterType === 'ALL' || r.maintenanceType === filterType || r.category === filterType;
-      const rMonth = r.executionDate ? r.executionDate.substring(0, 7) : '';
+      const rMonth = r.executionDate ? r.executionDate.substring(0, 7) : (r.createdAt ? r.createdAt.substring(0, 7) : '');
       const matchesMonth = selectedMonthFilter === 'ALL' || rMonth === selectedMonthFilter;
 
       return matchesSearch && matchesType && matchesMonth;
-    }).sort((a, b) => new Date(b.executionDate).getTime() - new Date(a.executionDate).getTime());
+    }).sort((a, b) => {
+      const dateA = new Date(a.executionDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.executionDate || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
   }, [records, searchTerm, filterType, selectedMonthFilter]);
 
   const handleOpenAdd = () => {
@@ -365,7 +369,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
                 {filtered.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-800/40">
                     <td className="py-3 px-3 font-mono text-slate-300 font-bold whitespace-nowrap">
-                      {formatDate(item.executionDate)}
+                      {formatDate(item.executionDate || (item.createdAt ? item.createdAt.split('T')[0] : ''))}
                     </td>
                     <td className="py-3 px-3">
                       <div className="font-semibold text-white">{item.title}</div>
