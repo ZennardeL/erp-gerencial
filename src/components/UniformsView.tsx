@@ -292,134 +292,134 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total em Estoque */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Disponível em Estoque</span>
-            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <Shirt className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Em Estoque</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+              <Shirt className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-white">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-xl sm:text-2xl font-extrabold text-white">
               {summary ? summary.totalStockItems : 0} peças
             </p>
-            <p className="text-xs text-slate-400 mt-1">Prontas para uso / entrega na academia</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Disponíveis para entrega</p>
           </div>
         </div>
 
         {/* Total Entregue a Funcionários */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Entregue à Equipe</span>
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <UserCheck className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Entregue à Equipe</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-emerald-400">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-xl sm:text-2xl font-extrabold text-emerald-400">
               {summary ? summary.totalDeliveredItems : 0} entregas
             </p>
-            <p className="text-xs text-slate-400 mt-1">Uniformes em posse dos funcionários</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Em posse dos colaboradores</p>
           </div>
         </div>
 
         {/* Total Descartado por Dano/Uso */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Descarte por Uso/Dano</span>
-            <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
-              <Flame className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Descarte / Dano</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20 flex-shrink-0">
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-rose-400">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-xl sm:text-2xl font-extrabold text-rose-400">
               {summary ? summary.totalDiscardedItems : 0} baixas
             </p>
-            <p className="text-xs text-slate-400 mt-1">Descartados por uso em excesso ou avarias</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Desgaste ou avarias</p>
           </div>
         </div>
 
         {/* Alertas de Estoque Mínimo */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estoque Baixo</span>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Estoque Baixo</span>
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center border flex-shrink-0 ${
               summary && summary.lowStockItemsCount > 0
                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                 : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
             }`}>
-              <AlertTriangle className="w-5 h-5" />
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className={`text-2xl font-extrabold ${summary && summary.lowStockItemsCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <div className="mt-2 sm:mt-3">
+            <p className={`text-xl sm:text-2xl font-extrabold ${summary && summary.lowStockItemsCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
               {summary ? summary.lowStockItemsCount : 0} tamanhos
             </p>
-            <p className="text-xs text-slate-400 mt-1">Peças no limite ou abaixo do mínimo</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Limite ou abaixo do mín.</p>
           </div>
         </div>
       </div>
 
       {/* Main Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-6 shadow-sm">
         {/* Navigation & Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full">
             <button
               onClick={() => setSubTab('stock')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 subTab === 'stock'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
               }`}
             >
               <Shirt className="w-4 h-4" />
-              Estoque de Uniformes ({items.length})
+              Estoque ({items.length})
             </button>
 
             <button
               onClick={() => setSubTab('deliveries')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 subTab === 'deliveries'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              Entregas a Funcionários ({deliveries.length})
+              Entregas ({deliveries.length})
             </button>
 
             <button
               onClick={() => setSubTab('discards')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 subTab === 'discards'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
               }`}
             >
               <Flame className="w-4 h-4" />
-              Descartes / Baixas ({discards.length})
+              Baixas / Descartes ({discards.length})
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-60">
               <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Buscar uniforme, funcionário..."
-                className="pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition"
+                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               />
             </div>
 
             {subTab === 'stock' && (
               <button
                 onClick={handleOpenAddStock}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition whitespace-nowrap"
               >
                 <PlusCircle className="w-4 h-4" />
                 Cadastrar Nova Peça
@@ -429,20 +429,20 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
             {subTab === 'deliveries' && (
               <button
                 onClick={handleOpenAddDelivery}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition whitespace-nowrap"
               >
                 <PlusCircle className="w-4 h-4" />
-                Registrar Entrega (Múltiplas Peças)
+                Registrar Entrega
               </button>
             )}
 
             {subTab === 'discards' && (
               <button
                 onClick={() => handleOpenAddDiscard()}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-md transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-md transition whitespace-nowrap"
               >
                 <PlusCircle className="w-4 h-4" />
-                Registrar Descarte / Dano
+                Registrar Descarte
               </button>
             )}
           </div>
@@ -675,10 +675,10 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
 
       {/* MODAL: ADD / EDIT STOCK ITEM */}
       {showStockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Shirt className="w-5 h-5 text-indigo-400" />
                 {editingStockItem ? 'Editar Peça de Uniforme' : 'Cadastrar Nova Peça no Estoque'}
               </h3>
@@ -698,7 +698,7 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Peça</label>
                   <select
@@ -733,7 +733,7 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Qtd em Estoque</label>
                   <input
@@ -804,19 +804,19 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
 
       {/* MODAL: REGISTER MULTIPLE UNIFORM DELIVERIES AT ONCE */}
       {showDeliveryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-emerald-400" />
-                {editingDelivery ? 'Editar Registro de Entrega' : 'Registrar Entrega de Pacote de Uniformes'}
+                {editingDelivery ? 'Editar Registro de Entrega' : 'Registrar Entrega de Uniformes'}
               </h3>
               <button onClick={() => setShowDeliveryModal(false)} className="text-slate-400 hover:text-white font-bold text-lg">×</button>
             </div>
 
             <form onSubmit={handleDeliverySubmit} className="space-y-4">
               {/* Employee Info Header */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Nome do Funcionário</label>
                   <input
@@ -979,10 +979,10 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
 
       {/* MODAL: REGISTER DISCARD / DAMAGE */}
       {showDiscardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Flame className="w-5 h-5 text-rose-400" />
                 Registrar Baixa / Descarte de Uniforme
               </h3>
@@ -1001,7 +1001,7 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Motivo do Descarte</label>
                   <select
@@ -1028,7 +1028,7 @@ export const UniformsView: React.FC<UniformsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Qtd a Dar Baixa</label>
                   <input

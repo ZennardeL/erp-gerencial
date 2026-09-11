@@ -173,39 +173,39 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Month Filter Selector Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-            <Calendar className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
               Selecione o Mês da Manutenção
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-[11px] sm:text-xs text-slate-400">
               Filtre os custos mensais de equipamentos e estrutura predial
             </p>
           </div>
         </div>
 
         {/* Quick Month Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full">
           <button
             onClick={() => setSelectedMonthFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border whitespace-nowrap flex-shrink-0 ${
               selectedMonthFilter === 'ALL'
                 ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
                 : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
             }`}
           >
-            🗓️ Todos os Mêses ({records.length})
+            🗓️ Todos ({records.length})
           </button>
 
           {monthList.map(m => (
             <button
               key={m.dateKey}
               onClick={() => setSelectedMonthFilter(m.dateKey)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition border flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 selectedMonthFilter === m.dateKey
                   ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
                   : 'bg-slate-950 text-slate-300 border-slate-800 hover:text-white hover:bg-slate-800'
@@ -221,74 +221,74 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
       </div>
 
       {/* Top Banner KPI Cards (Dynamic based on selected month) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Gasto no Mês */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Total Mês ({activeMonthLabel})
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">
+              Total Mês
             </span>
-            <div className="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
-              <DollarSign className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20 flex-shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-white">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-lg sm:text-2xl font-extrabold text-white">
               {formatCurrency(currentKPIs.total)}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {currentKPIs.count} manutenção(ões) registrada(s)
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 truncate">
+              {currentKPIs.count} manutenção(ões)
             </p>
           </div>
         </div>
 
         {/* Manutenção Predial */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Manutenção Predial</span>
-            <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-              <Building2 className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">Predial</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 flex-shrink-0">
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-amber-400">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-lg sm:text-2xl font-extrabold text-amber-400">
               {formatCurrency(currentKPIs.predial)}
             </p>
-            <p className="text-xs text-slate-400 mt-1">Estrutura, pintura, elétrica e hidráulica</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 truncate">Estrutura e elétrica</p>
           </div>
         </div>
 
         {/* Manutenção de Equipamentos */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Equipamentos & Máquinas</span>
-            <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <Dumbbell className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">Máquinas</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+              <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-extrabold text-indigo-400">
+          <div className="mt-2 sm:mt-3">
+            <p className="text-lg sm:text-2xl font-extrabold text-indigo-400">
               {formatCurrency(currentKPIs.equip)}
             </p>
-            <p className="text-xs text-slate-400 mt-1">Esteiras, musculação e aparelhos</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 truncate">Esteiras e musculação</p>
           </div>
         </div>
 
         {/* Preventiva vs Corretiva */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Preventiva vs Corretiva</span>
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <ShieldCheck className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">Tipo</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-3 space-y-1">
-            <p className="text-xs font-bold text-emerald-400 flex justify-between">
-              <span>Preventiva:</span>
+          <div className="mt-2 sm:mt-3 space-y-1">
+            <p className="text-[11px] sm:text-xs font-bold text-emerald-400 flex justify-between">
+              <span>Prev:</span>
               <span className="font-mono">{formatCurrency(currentKPIs.prev)}</span>
             </p>
-            <p className="text-xs font-bold text-rose-400 flex justify-between">
-              <span>Corretiva:</span>
+            <p className="text-[11px] sm:text-xs font-bold text-rose-400 flex justify-between">
+              <span>Corr:</span>
               <span className="font-mono">{formatCurrency(currentKPIs.corr)}</span>
             </p>
           </div>
@@ -296,28 +296,28 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
               <Wrench className="w-5 h-5 text-indigo-400" />
-              Gestão de Manutenções da Academia ({activeMonthLabel})
+              Gestão de Manutenções ({activeMonthLabel})
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Histórico detalhado e divisão de custos com manutenção predial e reparos de equipamentos.
+            <p className="text-xs text-slate-400 mt-0.5">
+              Histórico detalhado e custos com manutenção predial e reparos de equipamentos.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative flex-1 sm:w-60">
               <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar manutenção ou técnico..."
-                className="pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition"
+                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               />
             </div>
 
@@ -337,7 +337,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
             {/* Add Record Button */}
             <button
               onClick={handleOpenAdd}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition whitespace-nowrap"
             >
               <PlusCircle className="w-4 h-4" />
               Cadastrar Manutenção
@@ -444,10 +444,10 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
 
       {/* Modal Form for Adding/Editing Maintenance Record */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-indigo-400" />
                 {editingItem ? 'Editar Registro de Manutenção' : 'Cadastrar Nova Manutenção'}
               </h3>
@@ -460,7 +460,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Instalação</label>
                   <select
@@ -498,7 +498,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Data de Realização</label>
                   <input
@@ -523,7 +523,7 @@ export const MaintenanceTrackerView: React.FC<MaintenanceTrackerViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Custo de Material (R$)</label>
                   <input

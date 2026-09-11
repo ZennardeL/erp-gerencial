@@ -331,14 +331,14 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 backdrop-blur border border-slate-800 p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 backdrop-blur border border-slate-800 p-4 sm:p-6 rounded-xl sm:rounded-2xl">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 flex-shrink-0">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-tight">Ficha de Funcionários & CREF</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Ficha de Funcionários & CREF</h2>
               <p className="text-xs text-slate-400">Gestão de colaboradores, fotos de perfil, contratos e controle de validade de documentos</p>
             </div>
           </div>
@@ -346,7 +346,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
         <button
           onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-indigo-600/20"
         >
           <UserPlus className="w-4 h-4" />
           Cadastrar Funcionário
@@ -354,66 +354,66 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
       </div>
 
       {/* KPI Alert Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 font-medium">Total de Colaboradores</p>
-            <p className="text-2xl font-bold text-white mt-1">{kpis.total}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{kpis.active} ativos na equipe</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Total Colaboradores</p>
+            <p className="text-xl sm:text-2xl font-bold text-white mt-1">{kpis.total}</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">{kpis.active} ativos</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-            <Users className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+        <div className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-xl flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 font-medium">Professores (CREF)</p>
-            <p className="text-2xl font-bold text-white mt-1">{kpis.professors}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">Equipe técnica esportiva</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Professores (CREF)</p>
+            <p className="text-xl sm:text-2xl font-bold text-white mt-1">{kpis.professors}</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">Equipe técnica</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <GraduationCap className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
         <div 
           onClick={() => setDocAlertFilter(docAlertFilter === 'EXPIRING' ? 'ALL' : 'EXPIRING')}
-          className={`bg-slate-900 border p-4 rounded-xl flex items-center justify-between cursor-pointer transition ${
+          className={`bg-slate-900 border p-3 sm:p-4 rounded-xl flex items-center justify-between cursor-pointer transition ${
             docAlertFilter === 'EXPIRING' ? 'border-amber-500 shadow-lg shadow-amber-500/10' : 'border-slate-800 hover:border-amber-500/40'
           }`}
         >
           <div>
-            <p className="text-xs text-slate-400 font-medium">Documentos a Vencer (30d)</p>
-            <p className="text-2xl font-bold text-amber-400 mt-1">{kpis.totalExpiring}</p>
-            <p className="text-[11px] text-amber-500/80 mt-0.5">Atenção para renovação</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">A Vencer (30d)</p>
+            <p className="text-xl sm:text-2xl font-bold text-amber-400 mt-1">{kpis.totalExpiring}</p>
+            <p className="text-[10px] sm:text-[11px] text-amber-500/80 mt-0.5">Renovação</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <AlertTriangle className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
         <div 
           onClick={() => setDocAlertFilter(docAlertFilter === 'EXPIRED' ? 'ALL' : 'EXPIRED')}
-          className={`bg-slate-900 border p-4 rounded-xl flex items-center justify-between cursor-pointer transition ${
+          className={`bg-slate-900 border p-3 sm:p-4 rounded-xl flex items-center justify-between cursor-pointer transition ${
             docAlertFilter === 'EXPIRED' ? 'border-rose-500 shadow-lg shadow-rose-500/10' : 'border-slate-800 hover:border-rose-500/40'
           }`}
         >
           <div>
-            <p className="text-xs text-slate-400 font-medium">Documentos Vencidos</p>
-            <p className="text-2xl font-bold text-rose-400 mt-1">{kpis.totalExpired}</p>
-            <p className="text-[11px] text-rose-500/80 mt-0.5">Exigem ação imediata</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Vencidos</p>
+            <p className="text-xl sm:text-2xl font-bold text-rose-400 mt-1">{kpis.totalExpired}</p>
+            <p className="text-[10px] sm:text-[11px] text-rose-500/80 mt-0.5">Ação urgente</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-            <AlertCircle className="w-5 h-5" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 flex-shrink-0">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900/60 border border-slate-800 p-3 sm:p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         {/* Search */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -425,7 +425,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -613,10 +613,10 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
       {/* CREATE / EDIT EMPLOYEE MODAL */}
       {showEmployeeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between p-5 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-indigo-400" />
                 {editingEmployee ? 'Editar Ficha do Funcionário' : 'Novo Cadastro de Funcionário'}
               </h3>
@@ -628,7 +628,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveEmployee} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSaveEmployee} className="p-4 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
               {/* Photo Upload Section */}
               <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
                 <div className="relative">
@@ -803,25 +803,25 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
       {/* EMPLOYEE DETAILS & DOCUMENT MANAGEMENT MODAL */}
       {selectedEmployeeForDocs && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 max-h-[92vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/40">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-3.5 sm:p-5 border-b border-slate-800 bg-slate-950/40">
+              <div className="flex items-center gap-3 min-w-0">
                 {selectedEmployeeForDocs.avatarUrl ? (
                   <img 
                     src={selectedEmployeeForDocs.avatarUrl} 
                     alt={selectedEmployeeForDocs.name} 
-                    className="w-12 h-12 rounded-xl object-cover border border-indigo-500/40"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover border border-indigo-500/40 flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-base">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
                     {getInitials(selectedEmployeeForDocs.name)}
                   </div>
                 )}
-                <div>
-                  <h3 className="text-lg font-bold text-white">{selectedEmployeeForDocs.name}</h3>
-                  <div className="flex items-center gap-2 mt-0.5">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-white truncate">{selectedEmployeeForDocs.name}</h3>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-0.5">
                     {getRoleBadge(selectedEmployeeForDocs.role)}
                     {selectedEmployeeForDocs.crefNumber && (
                       <span className="text-xs text-indigo-400 font-mono">CREF: {selectedEmployeeForDocs.crefNumber}</span>
@@ -832,16 +832,16 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
               <button 
                 onClick={() => setSelectedEmployeeForDocs(null)}
-                className="text-slate-400 hover:text-white transition p-1"
+                className="text-slate-400 hover:text-white transition p-1 ml-2 flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
               {/* Document Actions Header */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-bold text-white flex items-center gap-2">
                     <FileText className="w-4 h-4 text-indigo-400" />
@@ -852,7 +852,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
                 <button
                   onClick={() => setShowAddDocModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition shadow-md"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition shadow-md w-full sm:w-auto"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   Anexar Novo Documento PDF

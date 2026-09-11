@@ -28,47 +28,66 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Dumbbell className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0 overflow-hidden">
+              <img 
+                src="/favicon.png" 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                onError={(e) => { 
+                  e.currentTarget.style.display = 'none'; 
+                }} 
+              />
+              <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-tight">ERP Gestão & Operação</h1>
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight truncate">
+                  ERP Gestão & Operação
+                </h1>
+                <span className="hidden md:inline-flex text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
                   Academia Pro v2.0
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Controle Operacional, Pessoal, Tarefas & Manutenção</p>
+              <p className="hidden sm:block text-[11px] text-slate-400 truncate">
+                Controle Operacional, Pessoal, Tarefas & Manutenção
+              </p>
             </div>
           </div>
 
           {/* Right Status Badge */}
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Banco de Dados Ativo
-            </span>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+            <div 
+              className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap"
+              title="Banco de Dados Supabase Ativo e Sincronizado"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="hidden sm:inline">Nuvem Ativa</span>
+            </div>
 
             <button
               onClick={() => setActiveTab('settings')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`inline-flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
                 activeTab === 'settings'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
               }`}
+              title="Configurações & Backup"
             >
               <Settings className="w-3.5 h-3.5 text-slate-400" />
-              Configurações & Backup
+              <span className="hidden md:inline">Configurações</span>
             </button>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 border-t border-slate-800/60 pt-1 pb-1 overflow-x-auto scrollbar-thin">
+        {/* Navigation Tabs (Smooth Swipeable Horizontal Scroll on Mobile) */}
+        <div 
+          className="flex items-center gap-1.5 border-t border-slate-800/60 py-1.5 overflow-x-auto scroll-smooth"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
           {/* 1. Dashboard Operacional */}
           <button
             onClick={() => setActiveTab('dashboard')}

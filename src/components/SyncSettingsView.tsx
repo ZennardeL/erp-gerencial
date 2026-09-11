@@ -51,14 +51,14 @@ export const SyncSettingsView: React.FC<SyncSettingsViewProps> = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4 sm:pb-5">
           <div>
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-wider">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               Segurança & Armazenamento Local
             </div>
-            <h1 className="text-2xl font-black text-white mt-1">Configurações & Backup do Sistema</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white mt-1">Configurações & Backup do Sistema</h1>
             <p className="text-xs text-slate-400 mt-1">
               O ERP opera de forma 100% autônoma e local no seu computador, com banco de dados dedicado e sem dependência de planilhas.
             </p>

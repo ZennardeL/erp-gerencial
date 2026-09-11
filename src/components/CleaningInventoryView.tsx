@@ -355,44 +355,44 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header & KPI Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Patrimônio Atual no Estoque */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estoque Atual Físico</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Estoque Físico</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl font-extrabold text-white">
+            <p className="text-lg sm:text-xl font-extrabold text-white">
               R$ {currentStockTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Valor em materiais na prateleira hoje</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Valor em materiais</p>
           </div>
         </div>
 
         {/* Variedade de Produtos */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Itens Únicos Cadastrados</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Itens Únicos</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
               <Package className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-xl font-extrabold text-indigo-400">
-              {currentStockList.length} Tipos de Produtos
+            <p className="text-lg sm:text-xl font-extrabold text-indigo-400">
+              {currentStockList.length} Produtos
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{currentStockTotalItems} unidades totais no estoque</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">{currentStockTotalItems} un. em estoque</p>
           </div>
         </div>
 
         {/* Alertas de Recompra */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recompra Urgente</span>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Recompra</span>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border flex-shrink-0 ${
               lowStockCount > 0
                 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                 : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -401,88 +401,88 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
             </div>
           </div>
           <div className="mt-2">
-            <p className={`text-xl font-extrabold ${lowStockCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+            <p className={`text-lg sm:text-xl font-extrabold ${lowStockCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
               {lowStockCount} Produto(s)
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Abaixo do estoque mínimo de segurança</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Abaixo do mínimo</p>
           </div>
         </div>
 
         {/* Botão Cotação Rápida */}
-        <div className="bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-xl p-4 shadow-sm flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" />
-              Cotação WhatsApp
+              Cotação
             </span>
-            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-              Rosana Galvão
+            <span className="text-[9px] sm:text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-500/30">
+              Rosana
             </span>
           </div>
           <button
             onClick={handleOpenOrderModal}
-            className="mt-2 w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-md flex items-center justify-center gap-2 transition"
+            className="mt-2 w-full py-1.5 sm:py-2 px-2 sm:px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] sm:text-xs rounded-lg shadow-md flex items-center justify-center gap-1.5 transition"
           >
             <ShoppingCart className="w-3.5 h-3.5" />
-            Gerar Pedido de Compra
+            Gerar Pedido
           </button>
         </div>
       </div>
 
       {/* Main Navigation Sub-Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-slate-800 pb-2 overflow-x-auto scrollbar-none max-w-full">
         <button
           onClick={() => setActiveTab('CURRENT_STOCK')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex-shrink-0 ${
             activeTab === 'CURRENT_STOCK'
               ? 'bg-emerald-600 text-white shadow-lg ring-1 ring-emerald-400'
               : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
           }`}
         >
           <Package className="w-4 h-4 text-emerald-300" />
-          📦 ESTOQUE ATUAL DA ACADEMIA ({currentStockList.length})
+          ESTOQUE ATUAL ({currentStockList.length})
         </button>
 
         <button
           onClick={() => setActiveTab('INVOICE_HISTORY')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex-shrink-0 ${
             activeTab === 'INVOICE_HISTORY'
               ? 'bg-indigo-600 text-white shadow-lg ring-1 ring-indigo-400'
               : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
           }`}
         >
           <Receipt className="w-4 h-4 text-indigo-300" />
-          🧾 HISTÓRICO DE COMPRAS POR MÊS ({invoiceMonthList.length} Notas)
+          HISTÓRICO DE COMPRAS ({invoiceMonthList.length})
         </button>
 
         <button
           onClick={() => setActiveTab('ANALYTICS')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex-shrink-0 ${
             activeTab === 'ANALYTICS'
               ? 'bg-indigo-600 text-white shadow-lg ring-1 ring-indigo-400'
               : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
           }`}
         >
           <BarChart3 className="w-4 h-4 text-amber-400" />
-          📊 INTELIGÊNCIA & CURVA ABC
+          CURVA ABC & INFLAÇÃO
         </button>
 
         <button
           onClick={() => setActiveTab('FORECAST')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition whitespace-nowrap flex-shrink-0 ${
             activeTab === 'FORECAST'
               ? 'bg-indigo-600 text-white shadow-lg ring-1 ring-indigo-400'
               : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
           }`}
         >
           <Clock className="w-4 h-4 text-emerald-400" />
-          📱 PREVISÃO & COTAÇÃO
+          COTAÇÃO WHATSAPP
         </button>
       </div>
 
       {/* TAB 1: CONSOLIDATED CURRENT STOCK (ESTOQUE ATUAL REAL NA PRATELEIRA) */}
       {activeTab === 'CURRENT_STOCK' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-6 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -948,10 +948,10 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
 
       {/* MODAL 1: ADD/EDIT CLEANING PRODUCT */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-400" />
                 {editingItem ? 'Editar Produto de Limpeza' : 'Cadastrar / Entrada de Produto'}
               </h3>
@@ -964,7 +964,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Data de Chegada</label>
                   <input
@@ -1005,7 +1005,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Qtd Atual</label>
                   <input
@@ -1046,7 +1046,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Custo Unitário (R$)</label>
                   <input
@@ -1111,12 +1111,12 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
 
       {/* MODAL 2: WHATSAPP ORDER GENERATOR */}
       {showOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-shrink-0">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-emerald-400" />
-                Gerador Inteligente de Pedido de Compra (WhatsApp)
+                Gerador de Pedido de Compra (WhatsApp)
               </h3>
               <button
                 onClick={() => setShowOrderModal(false)}
@@ -1126,7 +1126,7 @@ export const CleaningInventoryView: React.FC<CleaningInventoryViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto md:overflow-hidden">
               {/* Product Selection Column */}
               <div className="space-y-3 overflow-y-auto pr-2">
                 <span className="text-xs font-bold text-slate-300 block">Selecione os itens para solicitar cotação:</span>

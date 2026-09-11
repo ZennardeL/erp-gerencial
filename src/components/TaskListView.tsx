@@ -124,13 +124,13 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm tracking-wider uppercase">
+          <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs sm:text-sm tracking-wider uppercase">
             <CheckSquare className="w-4 h-4" />
             Operacional & Rotinas da Academia
           </div>
-          <h1 className="text-2xl font-black text-white mt-1">Lista de Tarefas & Checklist</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-white mt-1">Lista de Tarefas & Checklist</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Gerencie rotinas diárias, checklists de turno, manutenções pendentes e tarefas da equipe.
           </p>
@@ -138,7 +138,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow-lg shadow-indigo-600/20 active:scale-95"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow-lg shadow-indigo-600/20 active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Nova Tarefa
@@ -146,30 +146,30 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
       </div>
 
       {/* KPI Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <span className="text-[11px] font-bold text-slate-400 uppercase">Total</span>
-          <p className="text-2xl font-black text-white mt-1">{totalTasks}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4">
+          <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase">Total</span>
+          <p className="text-xl sm:text-2xl font-black text-white mt-1">{totalTasks}</p>
           <span className="text-[10px] text-slate-500">Cadastradas</span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <span className="text-[11px] font-bold text-amber-400 uppercase">Pendentes</span>
-          <p className="text-2xl font-black text-amber-400 mt-1">{pendingTasks}</p>
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4">
+          <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase">Pendentes</span>
+          <p className="text-xl sm:text-2xl font-black text-amber-400 mt-1">{pendingTasks}</p>
           <span className="text-[10px] text-slate-500">A fazer</span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <span className="text-[11px] font-bold text-sky-400 uppercase">Em Andamento</span>
-          <p className="text-2xl font-black text-sky-400 mt-1">{inProgressTasks}</p>
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4">
+          <span className="text-[10px] sm:text-[11px] font-bold text-sky-400 uppercase">Em Andamento</span>
+          <p className="text-xl sm:text-2xl font-black text-sky-400 mt-1">{inProgressTasks}</p>
           <span className="text-[10px] text-slate-500">Em execução</span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <span className="text-[11px] font-bold text-emerald-400 uppercase">Concluídas</span>
-          <p className="text-2xl font-black text-emerald-400 mt-1">{completedTasks}</p>
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4">
+          <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase">Concluídas</span>
+          <p className="text-xl sm:text-2xl font-black text-emerald-400 mt-1">{completedTasks}</p>
           <span className="text-[10px] text-slate-500">Finalizadas</span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <span className="text-[11px] font-bold text-rose-400 uppercase">Em Atraso</span>
-          <p className="text-2xl font-black text-rose-400 mt-1">{overdueTasks}</p>
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
+          <span className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase">Em Atraso</span>
+          <p className="text-xl sm:text-2xl font-black text-rose-400 mt-1">{overdueTasks}</p>
           <span className="text-[10px] text-slate-500">Prazo expirado</span>
         </div>
       </div>
@@ -326,12 +326,12 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
 
       {/* Modal Nova Tarefa */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-950/50">
               <div className="flex items-center gap-2">
                 <CheckSquare className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-white text-base">Nova Tarefa ou Rotina</h3>
+                <h3 className="font-bold text-white text-sm sm:text-base">Nova Tarefa ou Rotina</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -341,7 +341,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
                   Título da Tarefa *
