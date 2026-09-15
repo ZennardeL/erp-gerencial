@@ -1190,6 +1190,7 @@ const server = http.createServer(async (req, res) => {
         role: data.role || 'PROFESSOR',
         avatarUrl: data.avatarUrl || '',
         cpf: data.cpf || '',
+        rg: data.rg || '',
         crefNumber: data.crefNumber || '',
         phone: data.phone || '',
         email: data.email || '',
@@ -1218,6 +1219,7 @@ const server = http.createServer(async (req, res) => {
         if (data.role !== undefined) emp.role = data.role;
         if (data.avatarUrl !== undefined) emp.avatarUrl = data.avatarUrl;
         if (data.cpf !== undefined) emp.cpf = data.cpf;
+        if (data.rg !== undefined) emp.rg = data.rg;
         if (data.crefNumber !== undefined) emp.crefNumber = data.crefNumber;
         if (data.phone !== undefined) emp.phone = data.phone;
         if (data.email !== undefined) emp.email = data.email;

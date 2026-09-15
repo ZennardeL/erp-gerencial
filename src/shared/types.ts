@@ -271,6 +271,7 @@ export interface Employee {
   role: 'PROFESSOR' | 'RECEPCAO' | 'GERENTE' | 'LIMPEZA' | 'MANUTENCAO' | 'ESTAGIARIO' | 'OUTRO';
   avatarUrl?: string;
   cpf?: string;
+  rg?: string;
   crefNumber?: string;
   phone?: string;
   email?: string;

@@ -63,6 +63,7 @@ export async function getEmployees(): Promise<Employee[]> {
     role: e.role,
     avatarUrl: e.avatar_url || '',
     cpf: e.cpf || '',
+    rg: e.rg || '',
     crefNumber: e.cref_number || '',
     phone: e.phone || '',
     email: e.email || '',
@@ -83,6 +84,7 @@ export async function createEmployee(data: Partial<Employee>): Promise<Employee>
     role: data.role || 'RECEPCAO',
     avatar_url: data.avatarUrl || null,
     cpf: data.cpf || null,
+    rg: data.rg || null,
     cref_number: data.crefNumber || null,
     phone: data.phone || null,
     email: data.email || null,
@@ -111,6 +113,7 @@ export async function updateEmployee(emp: Partial<Employee>): Promise<Employee> 
   if (emp.role !== undefined) updateData.role = emp.role;
   if (emp.avatarUrl !== undefined) updateData.avatar_url = emp.avatarUrl;
   if (emp.cpf !== undefined) updateData.cpf = emp.cpf;
+  if (emp.rg !== undefined) updateData.rg = emp.rg;
   if (emp.crefNumber !== undefined) updateData.cref_number = emp.crefNumber;
   if (emp.phone !== undefined) updateData.phone = emp.phone;
   if (emp.email !== undefined) updateData.email = emp.email;

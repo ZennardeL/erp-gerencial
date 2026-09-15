@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { 
   Users, UserPlus, Search, Filter, ShieldCheck, AlertTriangle, AlertCircle, 
   FileText, Upload, Download, Eye, Trash2, Edit, Calendar, Phone, Mail, 
-  GraduationCap, Briefcase, FileCheck, CheckCircle2, Clock, X, Camera
+  GraduationCap, Briefcase, FileCheck, CheckCircle2, Clock, X, Camera,
+  Copy, Check, Fingerprint, CreditCard
 } from 'lucide-react';
 import { Employee, EmployeeDocument } from '../shared/types';
 import { formatDate } from '../shared/formatters';
@@ -29,6 +30,21 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [docAlertFilter, setDocAlertFilter] = useState('ALL'); // ALL, EXPIRING, EXPIRED
+
+  // 1-Click Clipboard Copy Feedback
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const handleCopy = (text: string, key: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch (err) {
+      console.error('Erro ao copiar para área de transferência:', err);
+    }
+  };
 
   // Modals
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
@@ -89,6 +105,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
     role: 'PROFESSOR' as Employee['role'],
     avatarUrl: '',
     cpf: '',
+    rg: '',
     crefNumber: '',
     phone: '',
     email: '',
@@ -162,7 +179,8 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
       const matchSearch = 
         e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (e.crefNumber && e.crefNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (e.cpf && e.cpf.toLowerCase().includes(searchTerm.toLowerCase()));
+        (e.cpf && e.cpf.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (e.rg && e.rg.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchRole = roleFilter === 'ALL' || e.role === roleFilter;
       const matchStatus = statusFilter === 'ALL' || e.status === statusFilter;
@@ -184,6 +202,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
       role: 'PROFESSOR',
       avatarUrl: '',
       cpf: '',
+      rg: '',
       crefNumber: '',
       phone: '',
       email: '',
@@ -202,6 +221,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
       role: emp.role,
       avatarUrl: emp.avatarUrl || '',
       cpf: emp.cpf || '',
+      rg: emp.rg || '',
       crefNumber: emp.crefNumber || '',
       phone: emp.phone || '',
       email: emp.email || '',
@@ -239,6 +259,9 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
     if (editingEmployee) {
       await onEditEmployee({ id: editingEmployee.id, ...empForm });
+      if (selectedEmployeeForDocs?.id === editingEmployee.id) {
+        setSelectedEmployeeForDocs((prev: Employee | null) => prev ? { ...prev, ...empForm } : null);
+      }
     } else {
       await onAddEmployee(empForm);
     }
@@ -417,7 +440,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Buscar por nome, número do CREF ou CPF..."
+            placeholder="Buscar por nome, CPF, RG ou número do CREF..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
@@ -518,6 +541,71 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
                         </span>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* CPF & RG Quick Access Bar */}
+                <div className="grid grid-cols-2 gap-2 py-2 px-3 bg-slate-950/70 border border-slate-800/80 rounded-xl text-xs">
+                  {/* CPF */}
+                  <div className="flex items-center justify-between gap-1 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                        <CreditCard className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                        CPF
+                      </span>
+                      <p className="font-mono text-xs font-semibold text-slate-200 truncate mt-0.5" title={emp.cpf || 'Não cadastrado'}>
+                        {emp.cpf || <span className="text-slate-500 font-normal italic">Não informado</span>}
+                      </p>
+                    </div>
+                    {emp.cpf && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopy(emp.cpf!, `card-cpf-${emp.id}`, e)}
+                        className={`p-1.5 rounded-lg transition flex-shrink-0 ${
+                          copiedKey === `card-cpf-${emp.id}`
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                        title="Copiar CPF"
+                      >
+                        {copiedKey === `card-cpf-${emp.id}` ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* RG */}
+                  <div className="flex items-center justify-between gap-1 min-w-0 border-l border-slate-800/80 pl-2.5">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                        <Fingerprint className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                        RG
+                      </span>
+                      <p className="font-mono text-xs font-semibold text-slate-200 truncate mt-0.5" title={emp.rg || 'Não cadastrado'}>
+                        {emp.rg || <span className="text-slate-500 font-normal italic">Não informado</span>}
+                      </p>
+                    </div>
+                    {emp.rg && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopy(emp.rg!, `card-rg-${emp.id}`, e)}
+                        className={`p-1.5 rounded-lg transition flex-shrink-0 ${
+                          copiedKey === `card-rg-${emp.id}`
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                        title="Copiar RG"
+                      >
+                        {copiedKey === `card-rg-${emp.id}` ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -689,31 +777,50 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
                 </div>
               </div>
 
-              {/* CREF (If Professor) & CPF */}
+              {/* Documentos Pessoais: CPF e RG */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Número do CREF {empForm.role === 'PROFESSOR' && <span className="text-amber-400 font-bold">*</span>}
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
+                    CPF (Cadastro de Pessoa Física)
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: 012345-G/SP"
-                    value={empForm.crefNumber}
-                    onChange={(e) => setEmpForm({ ...empForm, crefNumber: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">CPF</label>
                   <input
                     type="text"
                     placeholder="000.000.000-00"
                     value={empForm.cpf}
                     onChange={(e) => setEmpForm({ ...empForm, cpf: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                    <Fingerprint className="w-3.5 h-3.5 text-emerald-400" />
+                    RG (Registro Geral / Identidade)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="00.000.000-0"
+                    value={empForm.rg}
+                    onChange={(e) => setEmpForm({ ...empForm, rg: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* CREF (Professores) */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
+                  Número do CREF {empForm.role === 'PROFESSOR' && <span className="text-amber-400 font-bold">* (Obrigatório para Professores)</span>}
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: 012345-G/SP"
+                  value={empForm.crefNumber}
+                  onChange={(e) => setEmpForm({ ...empForm, crefNumber: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+                />
               </div>
 
               {/* Phone & Email */}
@@ -840,6 +947,168 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
 
             {/* Modal Body */}
             <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
+              {/* DADOS CADASTRAIS & DOCUMENTOS PESSOAIS (CPF, RG, CONTATO) */}
+              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+                <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Dados Cadastrais & Identificação</h4>
+                      <p className="text-[11px] text-slate-400">CPF e RG para preenchimento de termos, contratos e relatórios</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const empToEdit = employees.find(e => e.id === selectedEmployeeForDocs.id) || selectedEmployeeForDocs;
+                      handleOpenEdit(empToEdit);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 shadow-sm"
+                    title="Editar informações cadastrais"
+                  >
+                    <Edit className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Editar Cadastro</span>
+                  </button>
+                </div>
+
+                {/* CPF and RG Cards - High Visibility */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* CPF Card */}
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-3 hover:border-slate-700 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">CPF</p>
+                        <p className="text-base sm:text-lg font-mono font-bold text-white tracking-wide truncate">
+                          {selectedEmployeeForDocs.cpf || <span className="text-slate-500 font-normal italic text-sm">Não informado</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedEmployeeForDocs.cpf && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(selectedEmployeeForDocs.cpf!, 'modal-cpf')}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm ${
+                          copiedKey === 'modal-cpf'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30'
+                        }`}
+                      >
+                        {copiedKey === 'modal-cpf' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            Copiar
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* RG Card */}
+                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-3 hover:border-slate-700 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                        <Fingerprint className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">RG (Identidade)</p>
+                        <p className="text-base sm:text-lg font-mono font-bold text-white tracking-wide truncate">
+                          {selectedEmployeeForDocs.rg || <span className="text-slate-500 font-normal italic text-sm">Não informado</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedEmployeeForDocs.rg ? (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(selectedEmployeeForDocs.rg!, 'modal-rg')}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm ${
+                          copiedKey === 'modal-rg'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30'
+                        }`}
+                      >
+                        {copiedKey === 'modal-rg' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            Copiado!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            Copiar
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const empToEdit = employees.find(e => e.id === selectedEmployeeForDocs.id) || selectedEmployeeForDocs;
+                          handleOpenEdit(empToEdit);
+                        }}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
+                      >
+                        + Cadastrar RG
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Secondary details row (Phone, Email, Admission, Status) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
+                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 font-medium block">Telefone / WhatsApp</span>
+                    {selectedEmployeeForDocs.phone ? (
+                      <a 
+                        href={`https://wa.me/55${selectedEmployeeForDocs.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-emerald-400 hover:underline flex items-center gap-1 mt-0.5 truncate"
+                      >
+                        <Phone className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{selectedEmployeeForDocs.phone}</span>
+                      </a>
+                    ) : (
+                      <span className="text-slate-500 italic mt-0.5 block">—</span>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 font-medium block">Data de Admissão</span>
+                    <span className="font-medium text-slate-200 flex items-center gap-1 mt-0.5">
+                      <Calendar className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                      {selectedEmployeeForDocs.admissionDate ? formatDate(selectedEmployeeForDocs.admissionDate) : '—'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 font-medium block">E-mail</span>
+                    <span className="font-medium text-slate-200 truncate block mt-0.5" title={selectedEmployeeForDocs.email || ''}>
+                      {selectedEmployeeForDocs.email || '—'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 font-medium block">Status no Sistema</span>
+                    <span className="font-semibold text-emerald-400 mt-0.5 inline-block">
+                      {selectedEmployeeForDocs.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Document Actions Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
