@@ -30,6 +30,9 @@ export interface WhatsAppMessagePayload {
   recipientPhone: string;
   recipientLabel: string;
   content: string;
+  pdfBlob?: Blob;
+  pdfUrl?: string;
+  pdfFileName?: string;
 }
 
 export interface SyncLog {

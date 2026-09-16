@@ -1016,3 +1016,21 @@ export async function toggleBorderoItemStatus(itemId: string, nextStatus: 'PENDE
 
   if (error) throw error;
 }
+
+export async function uploadBorderoPdf(fileName: string, pdfBlob: Blob): Promise<string> {
+  try {
+    const { error } = await supabase.storage.from('borderos').upload(fileName, pdfBlob, {
+      contentType: 'application/pdf',
+      upsert: true
+    });
+    if (error) {
+      console.warn('Erro ao salvar PDF no Supabase Storage:', error);
+      return '';
+    }
+    const { data: publicUrlData } = supabase.storage.from('borderos').getPublicUrl(fileName);
+    return publicUrlData?.publicUrl || '';
+  } catch (err) {
+    console.warn('Exceção ao subir PDF para o Supabase Storage:', err);
+    return '';
+  }
+}

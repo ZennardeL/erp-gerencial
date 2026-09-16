@@ -27,6 +27,8 @@ import {
 import { BorderoWeekly, BorderoItem, BorderoBillType, WhatsAppMessagePayload } from '../shared/types';
 import { formatCurrency, formatDate } from '../shared/formatters';
 import { WhatsAppApprovalModal } from './WhatsAppApprovalModal';
+import { uploadBorderoPdf } from '../services/supabase';
+import html2pdf from 'html2pdf.js';
 
 interface BorderoViewProps {
   borderos: BorderoWeekly[];
@@ -75,6 +77,7 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppPayload, setWhatsAppPayload] = useState<WhatsAppMessagePayload | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -307,41 +310,91 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
   };
 
   // --- WHATSAPP MESSAGE BUILDERS ---
-  const handleOpenWhatsAppWeek = () => {
+  const handleOpenWhatsAppWeek = async () => {
     if (!currentBordero) return;
-    const totalAmount = currentBordero.items.reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
-    const totalPaid = currentBordero.items.filter(i => i.status === 'PAGO').reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
-    const totalPending = totalAmount - totalPaid;
-    const itemsCount = currentBordero.items.length;
+    setIsGeneratingPdf(true);
 
-    let message = `🏋️ *PANOBIANCO - BORDERÔ DE PAGAMENTOS*\n`;
-    message += `📅 *Período:* ${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)}\n\n`;
-    message += `💰 *Total Previsto:* ${formatCurrency(totalAmount)} (${itemsCount} contas)\n`;
-    message += `✅ *Total Já Pago:* ${formatCurrency(totalPaid)}\n`;
-    message += `⏳ *Saldo Pendente:* ${formatCurrency(totalPending)}\n\n`;
-    message += `📋 *CRONOGRAMA DETALHADO POR DIA:*\n`;
+    try {
+      const totalAmount = currentBordero.items.reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+      const totalPaid = currentBordero.items.filter(i => i.status === 'PAGO').reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+      const totalPending = totalAmount - totalPaid;
+      const itemsCount = currentBordero.items.length;
 
-    groupedItems.forEach(g => {
-      message += `\n▫️ *${g.dayName} (${formatDate(g.dateKey)})* - Subtotal: ${formatCurrency(g.subtotal)}\n`;
-      g.items.forEach(it => {
-        const statusText = it.status === 'PAGO' ? '✅ [PAGO]' : '⏳ [PENDENTE]';
-        message += `  • *${it.recipient}*: ${formatCurrency(it.amount)} ${statusText}\n`;
-        if (it.barcode) {
-          message += `    Linha digitável: \`${it.barcode}\`\n`;
+      let pdfBlob: Blob | undefined;
+      let pdfUrl: string | undefined;
+      const pdfFileName = `BORDERO_PANOBIANCO_${currentBordero.startDate}_A_${currentBordero.endDate}.pdf`;
+
+      // Grab the official A4 sheet element
+      const element = document.getElementById('panobianco-official-bordero-export') || 
+                      document.getElementById('panobianco-official-bordero');
+
+      if (element) {
+        try {
+          const opt: any = {
+            margin: 5,
+            filename: pdfFileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+
+          if (pdfBlob) {
+            const storageFileName = `bordero_${currentBordero.startDate}_a_${currentBordero.endDate}_${Date.now()}.pdf`;
+            const uploadedUrl = await uploadBorderoPdf(storageFileName, pdfBlob);
+            if (uploadedUrl) {
+              pdfUrl = uploadedUrl;
+            }
+          }
+        } catch (pdfErr) {
+          console.warn('Erro ao gerar/subir PDF via html2pdf:', pdfErr);
         }
+      }
+
+      let message = `🏋️ *PANOBIANCO - BORDERÔ DE PAGAMENTOS*\n`;
+      message += `📅 *Período:* ${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)}\n\n`;
+      message += `💰 *Total Previsto:* ${formatCurrency(totalAmount)} (${itemsCount} contas)\n`;
+      message += `✅ *Total Já Pago:* ${formatCurrency(totalPaid)}\n`;
+      message += `⏳ *Saldo Pendente:* ${formatCurrency(totalPending)}\n\n`;
+
+      if (pdfUrl) {
+        message += `📄 *PDF OFICIAL DO BORDERÔ (TOQUE PARA ABRIR):*\n👉 ${pdfUrl}\n\n`;
+      } else {
+        message += `📄 *PDF Oficial da Panobianco gerado em anexo para conferência.*\n\n`;
+      }
+
+      message += `📋 *CRONOGRAMA DETALHADO POR DIA:*\n`;
+
+      groupedItems.forEach(g => {
+        message += `\n▫️ *${g.dayName} (${formatDate(g.dateKey)})* - Subtotal: ${formatCurrency(g.subtotal)}\n`;
+        g.items.forEach(it => {
+          const statusText = it.status === 'PAGO' ? '✅ [PAGO]' : '⏳ [PENDENTE]';
+          message += `  • *${it.recipient}*: ${formatCurrency(it.amount)} ${statusText}\n`;
+          if (it.barcode) {
+            message += `    Linha digitável: \`${it.barcode}\`\n`;
+          }
+        });
       });
-    });
 
-    message += `\n_Gerado pelo ERP Gestão & Operação Academia Pro_`;
+      message += `\n_Relatório oficial emitido pelo ERP Gestão & Operação Academia Pro_`;
 
-    setWhatsAppPayload({
-      title: `Borderô Semanal (${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)})`,
-      recipientType: 'OWNER',
-      recipientPhone: ownerPhone || '',
-      recipientLabel: 'Patrão / Diretoria',
-      content: message
-    });
-    setShowWhatsAppModal(true);
+      setWhatsAppPayload({
+        title: `Borderô Semanal com PDF (${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)})`,
+        recipientType: 'OWNER',
+        recipientPhone: ownerPhone || '',
+        recipientLabel: 'Patrão / Diretoria',
+        content: message,
+        pdfBlob,
+        pdfUrl,
+        pdfFileName
+      });
+      setShowWhatsAppModal(true);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao processar PDF do Borderô');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleOpenWhatsAppBill = (item: BorderoItem) => {
@@ -392,12 +445,21 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={handleOpenWhatsAppWeek}
-            disabled={!currentBordero || currentBordero.items.length === 0}
+            disabled={!currentBordero || currentBordero.items.length === 0 || isGeneratingPdf}
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-xl transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title="Enviar resumo do Borderô para aprovação no WhatsApp"
+            title="Gerar PDF Oficial e aprovar envio no WhatsApp"
           >
-            <MessageSquare className="w-4 h-4 text-emerald-400" />
-            WhatsApp: Resumo
+            {isGeneratingPdf ? (
+              <>
+                <Clock className="w-4 h-4 text-emerald-400 animate-spin" />
+                <span>Gerando PDF Oficial...</span>
+              </>
+            ) : (
+              <>
+                <MessageSquare className="w-4 h-4 text-emerald-400" />
+                <span>WhatsApp: Enviar PDF</span>
+              </>
+            )}
           </button>
 
           <button
@@ -1090,6 +1152,167 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                     <li>Relatório gerado automaticamente pelo ERP Recepção Panobianco Boituva.</li>
                   </ul>
                 </div>
+
+                {/* 6. Signature Fields */}
+                <div className="grid grid-cols-2 gap-8 mt-4 pt-3 border-t border-slate-200 text-center">
+                  <div>
+                    <div className="border-b border-slate-400 w-44 mx-auto mb-1"></div>
+                    <p className="text-[9px] font-bold uppercase text-slate-700">Responsável Financeiro / Recepção</p>
+                    <p className="text-[8px] text-slate-400">Panobianco Boituva</p>
+                  </div>
+                  <div>
+                    <div className="border-b border-slate-400 w-44 mx-auto mb-1"></div>
+                    <p className="text-[9px] font-bold uppercase text-slate-700">Visto Gerência / Diretoria</p>
+                    <p className="text-[8px] text-slate-400">Aprovado para Pagamento</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. HIDDEN OFF-SCREEN SHEET FOR HTML2PDF EXPORT */}
+      {currentBordero && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0, width: '840px', zIndex: -999, pointerEvents: 'none', opacity: 0 }}>
+          <div 
+            id="panobianco-official-bordero-export"
+            className="panobianco-a4-sheet bg-white text-slate-900 mx-auto p-6 max-w-[840px] border border-slate-200"
+            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+          >
+            {/* 1. Header Oficial */}
+            <div className="flex justify-between items-start border-b-2 border-orange-600 pb-2.5 mb-3">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-orange-600 leading-none">
+                  PANOBIANCO <span className="text-slate-900">ACADEMIAS</span>
+                </h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                  CONTROLE FINANCEIRO • BORDERÔ SEMANAL DE PAGAMENTOS
+                </p>
+              </div>
+              <div className="text-right bg-slate-100 border border-slate-300 rounded px-2.5 py-1">
+                <span className="text-[8.5px] font-bold text-slate-500 uppercase block">Semana de Referência</span>
+                <span className="text-xs font-black text-slate-900">
+                  {formatDate(currentBordero.startDate)} a {formatDate(currentBordero.endDate)}
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Top KPI Cards Grid */}
+            <div className="grid grid-cols-4 gap-2 mb-3.5">
+              {groupedItems.slice(0, 3).map((g, idx) => (
+                <div 
+                  key={g.dateKey}
+                  className={`p-2 rounded border-l-4 shadow-sm ${
+                    idx === 0 
+                      ? 'border-l-rose-500 bg-rose-50' 
+                      : idx === 1 
+                      ? 'border-l-amber-500 bg-amber-50' 
+                      : 'border-l-blue-500 bg-blue-50'
+                  }`}
+                >
+                  <span className="text-[9px] font-bold uppercase text-slate-600 block truncate">
+                    {g.dayName} ({formatDate(g.dateKey).substring(0, 5)})
+                  </span>
+                  <p className="text-sm font-black text-slate-900 mt-0.5">{formatCurrency(g.subtotal)}</p>
+                  <span className="text-[8.5px] text-slate-500 block truncate">{g.items.map(i => i.recipient).join(' + ')}</span>
+                </div>
+              ))}
+
+              {/* Total Geral KPI */}
+              <div className="p-2 rounded border-l-4 border-l-emerald-600 bg-emerald-50 shadow-sm">
+                <span className="text-[9px] font-bold uppercase text-emerald-800 block">TOTAL GERAL</span>
+                <p className="text-sm font-black text-emerald-900 mt-0.5">{formatCurrency(kpis.totalAmount)}</p>
+                <span className="text-[8.5px] text-emerald-700 block">{kpis.itemsCount} obrigações</span>
+              </div>
+            </div>
+
+            {/* 3. Categorized Days Tables */}
+            <div className="space-y-3">
+              {groupedItems.map((group, idx) => (
+                <div key={group.dateKey} className="border border-slate-200 rounded overflow-hidden">
+                  <div className="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex justify-between items-center text-xs">
+                    <span className="font-extrabold text-slate-900">
+                      {idx + 1}. VENCIMENTOS DO DIA {formatDate(group.dateKey).toUpperCase()} ({group.dayName.toUpperCase()})
+                    </span>
+                    <span className="font-black text-slate-900 text-[11px]">
+                      SUBTOTAL: {formatCurrency(group.subtotal)}
+                    </span>
+                  </div>
+
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 text-[9px] uppercase border-b border-slate-200">
+                        <th className="py-1 px-2.5 w-12 text-center">Visto</th>
+                        <th className="py-1 px-2.5">Favorecido / Beneficiário</th>
+                        <th className="py-1 px-2.5">Descrição / Categoria</th>
+                        <th className="py-1 px-2.5 text-center">Vencimento</th>
+                        <th className="py-1 px-2.5 text-center">Tipo</th>
+                        <th className="py-1 px-2.5 text-right">Valor (R$)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-[11px]">
+                      {group.items.map((item) => (
+                        <tr key={item.id} className={item.status === 'PAGO' ? 'bg-emerald-50/40' : ''}>
+                          <td className="py-1.5 px-2.5 text-center">
+                            <div className={`w-4 h-4 rounded border mx-auto flex items-center justify-center ${
+                              item.status === 'PAGO' ? 'border-emerald-600 bg-emerald-100' : 'border-slate-300'
+                            }`}>
+                              {item.status === 'PAGO' && <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />}
+                            </div>
+                          </td>
+                          <td className="py-1.5 px-2.5 font-bold text-slate-900">{item.recipient}</td>
+                          <td className="py-1.5 px-2.5 text-slate-600 text-[10px]">{item.description || '—'}</td>
+                          <td className="py-1.5 px-2.5 text-center text-slate-700 font-mono text-[10px]">
+                            {formatDate(item.dueDate)}
+                          </td>
+                          <td className="py-1.5 px-2.5 text-center">
+                            <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">
+                              {item.billType}
+                            </span>
+                          </td>
+                          <td className="py-1.5 px-2.5 text-right font-black font-mono text-slate-900">
+                            {formatCurrency(item.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+
+            {/* 4. Grand Total Banner */}
+            <div className="mt-3.5 border-2 border-orange-500 rounded p-2.5 bg-orange-50/50 flex justify-between items-center">
+              <span className="text-xs font-black uppercase text-slate-900">
+                💰 TOTAL GERAL DO BORDERÔ ({formatDate(currentBordero.startDate)} A {formatDate(currentBordero.endDate)}):
+              </span>
+              <span className="text-lg font-black font-mono text-orange-600">
+                {formatCurrency(kpis.totalAmount)}
+              </span>
+            </div>
+
+            {/* 5. Financial Notes Footer */}
+            <div className="mt-3 text-[9px] text-slate-500 border-t border-slate-200 pt-2 space-y-1">
+              <p className="font-bold text-slate-700 uppercase">Orientações e Observações Financeiras da Semana:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Controle e liquidação através do portal bancário / aplicativo com visto manual ou digital.</li>
+                {currentBordero.notes && <li>{currentBordero.notes}</li>}
+                <li>Relatório oficial emitido pelo ERP Recepção Panobianco Boituva.</li>
+              </ul>
+            </div>
+
+            {/* 6. Signature Fields */}
+            <div className="grid grid-cols-2 gap-8 mt-5 pt-3 border-t border-slate-200 text-center">
+              <div>
+                <div className="border-b border-slate-400 w-44 mx-auto mb-1"></div>
+                <p className="text-[9px] font-bold uppercase text-slate-700">Responsável Financeiro / Recepção</p>
+                <p className="text-[8px] text-slate-400">Panobianco Boituva</p>
+              </div>
+              <div>
+                <div className="border-b border-slate-400 w-44 mx-auto mb-1"></div>
+                <p className="text-[9px] font-bold uppercase text-slate-700">Visto Gerência / Diretoria</p>
+                <p className="text-[8px] text-slate-400">Aprovado para Pagamento</p>
               </div>
             </div>
           </div>
