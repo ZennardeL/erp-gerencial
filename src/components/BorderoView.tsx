@@ -21,13 +21,18 @@ import {
   Barcode,
   ExternalLink,
   Sparkles,
-  Info
+  Info,
+  MessageSquare
 } from 'lucide-react';
-import { BorderoWeekly, BorderoItem, BorderoBillType } from '../shared/types';
+import { BorderoWeekly, BorderoItem, BorderoBillType, WhatsAppMessagePayload } from '../shared/types';
 import { formatCurrency, formatDate } from '../shared/formatters';
+import { WhatsAppApprovalModal } from './WhatsAppApprovalModal';
 
 interface BorderoViewProps {
   borderos: BorderoWeekly[];
+  ownerPhone?: string;
+  managerPhone?: string;
+  onUpdatePhoneSettings?: (role: 'owner' | 'manager', newPhone: string) => void;
   onAddBordero: (data: Partial<BorderoWeekly>) => Promise<void>;
   onUpdateBordero: (id: string, data: Partial<BorderoWeekly>) => Promise<void>;
   onDeleteBordero: (id: string) => Promise<void>;
@@ -39,6 +44,9 @@ interface BorderoViewProps {
 
 export const BorderoView: React.FC<BorderoViewProps> = ({
   borderos,
+  ownerPhone,
+  managerPhone,
+  onUpdatePhoneSettings,
   onAddBordero,
   onUpdateBordero,
   onDeleteBordero,
@@ -65,6 +73,8 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
   const [showItemModal, setShowItemModal] = useState(false);
   const [editingItem, setEditingItem] = useState<BorderoItem | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsAppPayload, setWhatsAppPayload] = useState<WhatsAppMessagePayload | null>(null);
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -296,6 +306,68 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
     }
   };
 
+  // --- WHATSAPP MESSAGE BUILDERS ---
+  const handleOpenWhatsAppWeek = () => {
+    if (!currentBordero) return;
+    const totalAmount = currentBordero.items.reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+    const totalPaid = currentBordero.items.filter(i => i.status === 'PAGO').reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+    const totalPending = totalAmount - totalPaid;
+    const itemsCount = currentBordero.items.length;
+
+    let message = `🏋️ *PANOBIANCO - BORDERÔ DE PAGAMENTOS*\n`;
+    message += `📅 *Período:* ${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)}\n\n`;
+    message += `💰 *Total Previsto:* ${formatCurrency(totalAmount)} (${itemsCount} contas)\n`;
+    message += `✅ *Total Já Pago:* ${formatCurrency(totalPaid)}\n`;
+    message += `⏳ *Saldo Pendente:* ${formatCurrency(totalPending)}\n\n`;
+    message += `📋 *CRONOGRAMA DETALHADO POR DIA:*\n`;
+
+    groupedItems.forEach(g => {
+      message += `\n▫️ *${g.dayName} (${formatDate(g.dateKey)})* - Subtotal: ${formatCurrency(g.subtotal)}\n`;
+      g.items.forEach(it => {
+        const statusText = it.status === 'PAGO' ? '✅ [PAGO]' : '⏳ [PENDENTE]';
+        message += `  • *${it.recipient}*: ${formatCurrency(it.amount)} ${statusText}\n`;
+        if (it.barcode) {
+          message += `    Linha digitável: \`${it.barcode}\`\n`;
+        }
+      });
+    });
+
+    message += `\n_Gerado pelo ERP Gestão & Operação Academia Pro_`;
+
+    setWhatsAppPayload({
+      title: `Borderô Semanal (${formatDate(currentBordero.startDate)} a ${formatDate(currentBordero.endDate)})`,
+      recipientType: 'OWNER',
+      recipientPhone: ownerPhone || '',
+      recipientLabel: 'Patrão / Diretoria',
+      content: message
+    });
+    setShowWhatsAppModal(true);
+  };
+
+  const handleOpenWhatsAppBill = (item: BorderoItem) => {
+    let message = `🔔 *CONTA A PAGAR - PANOBIANCO*\n\n`;
+    message += `🏢 *Beneficiário:* ${item.recipient}\n`;
+    message += `💰 *Valor:* ${formatCurrency(item.amount)}\n`;
+    message += `📅 *Vencimento:* ${formatDate(item.dueDate)}\n`;
+    message += `📌 *Status:* ${item.status === 'PAGO' ? '✅ Pago' : '⏳ Pendente'}\n`;
+    if (item.description) {
+      message += `📝 *Descrição:* ${item.description}\n`;
+    }
+    if (item.barcode) {
+      message += `\n📲 *Código de Barras / Linha Digitável:*\n\`${item.barcode}\`\n\n_(Copie a linha acima para colar no app do banco)_\n`;
+    }
+    message += `\n_ERP Gestão & Operação Academia Pro_`;
+
+    setWhatsAppPayload({
+      title: `Conta: ${item.recipient} (${formatCurrency(item.amount)})`,
+      recipientType: 'OWNER',
+      recipientPhone: ownerPhone || '',
+      recipientLabel: 'Patrão / Diretoria',
+      content: message
+    });
+    setShowWhatsAppModal(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Header & Quick Actions */}
@@ -318,6 +390,16 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleOpenWhatsAppWeek}
+            disabled={!currentBordero || currentBordero.items.length === 0}
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-xl transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            title="Enviar resumo do Borderô para aprovação no WhatsApp"
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-400" />
+            WhatsApp: Resumo
+          </button>
+
           <button
             onClick={() => setShowPrintModal(true)}
             disabled={!currentBordero || currentBordero.items.length === 0}
@@ -589,6 +671,13 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenWhatsAppBill(item)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition cursor-pointer"
+                            title="Aprovar e enviar conta no WhatsApp"
+                          >
+                            <MessageSquare className="w-4 h-4 text-emerald-400" />
+                          </button>
                           <button
                             onClick={() => handleOpenEditItem(item)}
                             className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
@@ -1006,6 +1095,16 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* WhatsApp Message Approval Modal */}
+      <WhatsAppApprovalModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        payload={whatsAppPayload}
+        ownerPhone={ownerPhone}
+        managerPhone={managerPhone}
+        onUpdatePhoneSettings={onUpdatePhoneSettings}
+      />
 
       {/* Global CSS for Print Media */}
       <style>{`

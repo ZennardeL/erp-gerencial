@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   HardDrive,
   RefreshCw,
-  FolderLock
+  FolderLock,
+  MessageSquare
 } from 'lucide-react';
 import { AppSetting, SyncLog } from '../shared/types';
 
@@ -22,9 +23,30 @@ interface SyncSettingsViewProps {
   onTriggerSync?: () => void;
 }
 
-export const SyncSettingsView: React.FC<SyncSettingsViewProps> = () => {
+export const SyncSettingsView: React.FC<SyncSettingsViewProps> = ({
+  settings,
+  onSaveSettings
+}) => {
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
+
+  // WhatsApp Contacts State
+  const [ownerPhone, setOwnerPhone] = useState(settings?.whatsappOwnerPhone || '');
+  const [managerPhone, setManagerPhone] = useState(settings?.whatsappManagerPhone || '');
+  const [receptionPhone, setReceptionPhone] = useState(settings?.whatsappReceptionPhone || '');
+  const [phoneSaved, setPhoneSaved] = useState(false);
+
+  const handleSavePhones = () => {
+    if (onSaveSettings) {
+      onSaveSettings({
+        whatsappOwnerPhone: ownerPhone,
+        whatsappManagerPhone: managerPhone,
+        whatsappReceptionPhone: receptionPhone
+      });
+      setPhoneSaved(true);
+      setTimeout(() => setPhoneSaved(false), 3500);
+    }
+  };
 
   const handleCreateLocalBackup = async () => {
     setIsCreatingBackup(true);
@@ -83,6 +105,84 @@ export const SyncSettingsView: React.FC<SyncSettingsViewProps> = () => {
               Como as vendas da recepção agora são operadas diretamente pelo novo sistema de PDV, nenhuma leitura automática de planilha Excel é mais executada no ERP. O sistema roda silenciosamente, sem travamentos e com máxima velocidade.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* WhatsApp Contacts Configuration Card */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">Contatos para Disparos WhatsApp</h2>
+              <p className="text-xs text-slate-400">
+                Configure os números que receberão as aprovações de Borderô, contas e alertas.
+              </p>
+            </div>
+          </div>
+
+          {phoneSaved && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4" />
+              Salvo no Supabase!
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              👑 WhatsApp do Patrão / Diretoria
+            </label>
+            <input
+              type="tel"
+              value={ownerPhone}
+              onChange={(e) => setOwnerPhone(e.target.value)}
+              placeholder="Ex: (15) 99876-5432"
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <p className="text-[11px] text-slate-500">Destinatário principal do Borderô e contas do dia.</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              👔 WhatsApp da Gerência
+            </label>
+            <input
+              type="tel"
+              value={managerPhone}
+              onChange={(e) => setManagerPhone(e.target.value)}
+              placeholder="Ex: (15) 99123-4567"
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <p className="text-[11px] text-slate-500">Destinatário de acompanhamento gerencial.</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              📞 WhatsApp da Recepção
+            </label>
+            <input
+              type="tel"
+              value={receptionPhone}
+              onChange={(e) => setReceptionPhone(e.target.value)}
+              placeholder="Ex: (15) 98111-2222"
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <p className="text-[11px] text-slate-500">Número da recepção da unidade.</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={handleSavePhones}
+            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            Salvar Telefones WhatsApp
+          </button>
         </div>
       </div>
 

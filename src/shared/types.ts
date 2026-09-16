@@ -19,6 +19,17 @@ export interface AppSetting {
   autoSyncEnabled: boolean;
   lastSyncedAt: string | null;
   columnMapping: ColumnMapping;
+  whatsappOwnerPhone?: string;
+  whatsappManagerPhone?: string;
+  whatsappReceptionPhone?: string;
+}
+
+export interface WhatsAppMessagePayload {
+  title: string;
+  recipientType: 'OWNER' | 'MANAGER' | 'OTHER';
+  recipientPhone: string;
+  recipientLabel: string;
+  content: string;
 }
 
 export interface SyncLog {

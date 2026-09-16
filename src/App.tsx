@@ -556,6 +556,16 @@ export default function App() {
     }
   };
 
+  const handleUpdatePhoneSettings = async (role: 'owner' | 'manager', newPhone: string) => {
+    try {
+      const updateData = role === 'owner' ? { whatsappOwnerPhone: newPhone } : { whatsappManagerPhone: newPhone };
+      const updated = await saveSettings(updateData);
+      setSettings(updated);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Header
@@ -642,6 +652,9 @@ export default function App() {
         {activeTab === 'borderos' && (
           <BorderoView
             borderos={borderos}
+            ownerPhone={settings?.whatsappOwnerPhone}
+            managerPhone={settings?.whatsappManagerPhone}
+            onUpdatePhoneSettings={handleUpdatePhoneSettings}
             onAddBordero={handleAddBordero}
             onUpdateBordero={handleUpdateBordero}
             onDeleteBordero={handleDeleteBordero}
@@ -656,6 +669,7 @@ export default function App() {
         {activeTab === 'settings' && (
           <SyncSettingsView
             settings={settings || ({ id: 'default', excelFilePath: '', syncIntervalSeconds: 0, autoSyncEnabled: false, lastSyncedAt: null, columnMapping: {} as any })}
+            onSaveSettings={handleSaveSettings}
           />
         )}
       </main>

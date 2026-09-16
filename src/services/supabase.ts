@@ -820,28 +820,30 @@ export async function getSettings(): Promise<AppSetting> {
     id: data?.id || 'default',
     excelFilePath: '',
     syncIntervalSeconds: 0,
-    autoSyncEnabled: false,
+    autoSyncEnabled: data?.auto_sync_enabled || false,
     lastSyncedAt: null,
-    columnMapping: {} as any
+    columnMapping: {} as any,
+    whatsappOwnerPhone: data?.whatsapp_owner_phone || '',
+    whatsappManagerPhone: data?.whatsapp_manager_phone || '',
+    whatsappReceptionPhone: data?.whatsapp_reception_phone || ''
   };
 }
 
 export async function saveSettings(settings: Partial<AppSetting>): Promise<AppSetting> {
-  await supabase.from('erp_settings').upsert({
+  const updatePayload: any = {
     id: 'default',
     system_name: 'ERP Recepção Pro v2.0',
     gym_name: 'Panobianco Boituva',
-    auto_sync_enabled: false,
     updated_at: new Date().toISOString()
-  });
-  return {
-    id: 'default',
-    excelFilePath: '',
-    syncIntervalSeconds: 0,
-    autoSyncEnabled: false,
-    lastSyncedAt: null,
-    columnMapping: {} as any
   };
+  if (settings.whatsappOwnerPhone !== undefined) updatePayload.whatsapp_owner_phone = settings.whatsappOwnerPhone;
+  if (settings.whatsappManagerPhone !== undefined) updatePayload.whatsapp_manager_phone = settings.whatsappManagerPhone;
+  if (settings.whatsappReceptionPhone !== undefined) updatePayload.whatsapp_reception_phone = settings.whatsappReceptionPhone;
+  if (settings.autoSyncEnabled !== undefined) updatePayload.auto_sync_enabled = settings.autoSyncEnabled;
+
+  await supabase.from('erp_settings').upsert(updatePayload);
+
+  return getSettings();
 }
 
 // --- 8. BORDERÔS SEMANAIS & CONTAS A PAGAR ---
