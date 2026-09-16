@@ -327,3 +327,39 @@ export interface OperationalDashboardSummary {
   criticalCleaningProducts: CleaningProduct[];
 }
 
+export type BorderoBillType = 
+  | 'CONCESSIONARIA'
+  | 'SISTEMA_BOLETO'
+  | 'MARKETING'
+  | 'GUIA_BOLETO'
+  | 'PIX'
+  | 'FOLHA_SALARIO'
+  | 'OUTRO';
+
+export interface BorderoItem {
+  id: string;
+  borderoId: string;
+  recipient: string;
+  description?: string;
+  dueDate: string; // YYYY-MM-DD
+  amount: number;
+  billType: BorderoBillType;
+  barcode?: string;
+  status: 'PENDENTE' | 'PAGO';
+  paidAt?: string | null;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BorderoWeekly {
+  id: string;
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  notes?: string;
+  items: BorderoItem[];
+  createdAt: string;
+  updatedAt?: string;
+}
+

@@ -7,6 +7,7 @@ import { UniformsView } from './components/UniformsView';
 import { CleaningInventoryView } from './components/CleaningInventoryView';
 import { MaintenanceTrackerView } from './components/MaintenanceTrackerView';
 import { SyncSettingsView } from './components/SyncSettingsView';
+import { BorderoView } from './components/BorderoView';
 import { 
   AppSetting, 
   CleaningProduct, 
@@ -19,7 +20,9 @@ import {
   Employee, 
   EmployeeDocument, 
   TaskItem, 
-  OperationalDashboardSummary 
+  OperationalDashboardSummary,
+  BorderoWeekly,
+  BorderoItem
 } from './shared/types';
 import {
   getEmployees,
@@ -55,7 +58,15 @@ import {
   getMaintenanceSummary,
   getOperationalDashboardSummary,
   getSettings,
-  saveSettings
+  saveSettings,
+  getBorderos,
+  createBordero,
+  updateBordero,
+  deleteBordero,
+  addBorderoItem,
+  updateBorderoItem,
+  deleteBorderoItem,
+  toggleBorderoItemStatus
 } from './services/supabase';
 
 export default function App() {
@@ -77,6 +88,9 @@ export default function App() {
   const [uniformDeliveries, setUniformDeliveries] = useState<UniformDelivery[]>([]);
   const [uniformDiscards, setUniformDiscards] = useState<UniformDiscard[]>([]);
   const [uniformSummary, setUniformSummary] = useState<UniformSummary | null>(null);
+
+  // Borderô Semanal State
+  const [borderos, setBorderos] = useState<BorderoWeekly[]>([]);
 
   // Calculated Badges
   const expiringDocsCount = employees.reduce((acc, emp) => {
@@ -142,6 +156,11 @@ export default function App() {
           setUniformSummary(resSum);
           break;
         }
+        case 'borderos': {
+          const res = await getBorderos();
+          setBorderos(res);
+          break;
+        }
         case 'settings': {
           const resSet = await getSettings();
           setSettings(resSet);
@@ -159,6 +178,7 @@ export default function App() {
     getTasks().then(setTasks).catch(() => {});
     getCleaningProducts().then(setCleaningProducts).catch(() => {});
     getSettings().then(setSettings).catch(() => {});
+    getBorderos().then(setBorderos).catch(() => {});
 
     // Polling a cada 15 segundos para manter os dados atualizados entre múltiplos usuários
     const interval = setInterval(() => {
@@ -421,6 +441,110 @@ export default function App() {
     }
   };
 
+  // --- HANDLERS: BORDERÔ SEMANAL ---
+  const handleAddBordero = async (data: Partial<BorderoWeekly>) => {
+    try {
+      const newB = await createBordero(data);
+      setBorderos(prev => [newB, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao criar borderô');
+    }
+  };
+
+  const handleUpdateBordero = async (id: string, data: Partial<BorderoWeekly>) => {
+    try {
+      await updateBordero(id, data);
+      setBorderos(prev => prev.map(b => b.id === id ? { ...b, ...data } : b));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao atualizar borderô');
+    }
+  };
+
+  const handleDeleteBordero = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este borderô inteiro? Todas as contas vinculadas serão apagadas.')) return;
+    try {
+      await deleteBordero(id);
+      setBorderos(prev => prev.filter(b => b.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao excluir borderô');
+    }
+  };
+
+  const handleAddBorderoItem = async (borderoId: string, itemData: Partial<BorderoItem>) => {
+    try {
+      const newItem = await addBorderoItem(borderoId, itemData);
+      setBorderos(prev => prev.map(b => {
+        if (b.id === borderoId) {
+          const currentItems = b.items || [];
+          const updatedItems = [...currentItems, newItem];
+          const newTotal = updatedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+          return { ...b, items: updatedItems, totalAmount: newTotal };
+        }
+        return b;
+      }));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao adicionar conta no borderô');
+    }
+  };
+
+  const handleUpdateBorderoItem = async (itemId: string, itemData: Partial<BorderoItem>) => {
+    try {
+      await updateBorderoItem(itemId, itemData);
+      setBorderos(prev => prev.map(b => {
+        const itemExists = (b.items || []).some(it => it.id === itemId);
+        if (itemExists) {
+          const updatedItems = (b.items || []).map(it => it.id === itemId ? { ...it, ...itemData } : it);
+          const newTotal = updatedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+          return { ...b, items: updatedItems, totalAmount: newTotal };
+        }
+        return b;
+      }));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao atualizar conta');
+    }
+  };
+
+  const handleDeleteBorderoItem = async (itemId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta conta do borderô?')) return;
+    try {
+      await deleteBorderoItem(itemId);
+      setBorderos(prev => prev.map(b => {
+        const itemExists = (b.items || []).some(it => it.id === itemId);
+        if (itemExists) {
+          const updatedItems = (b.items || []).filter(it => it.id !== itemId);
+          const newTotal = updatedItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+          return { ...b, items: updatedItems, totalAmount: newTotal };
+        }
+        return b;
+      }));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao excluir conta do borderô');
+    }
+  };
+
+  const handleToggleBorderoStatus = async (itemId: string, nextStatus: 'PENDENTE' | 'PAGO') => {
+    try {
+      await toggleBorderoItemStatus(itemId, nextStatus);
+      setBorderos(prev => prev.map(b => {
+        const itemExists = (b.items || []).some(it => it.id === itemId);
+        if (itemExists) {
+          const updatedItems = (b.items || []).map(it => it.id === itemId ? { ...it, status: nextStatus, paidAt: nextStatus === 'PAGO' ? new Date().toISOString() : null } : it);
+          return { ...b, items: updatedItems };
+        }
+        return b;
+      }));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao alterar status da conta');
+    }
+  };
+
   // --- HANDLERS: CONFIGURAÇÕES ---
   const handleSaveSettings = async (newSettings: Partial<AppSetting>) => {
     try {
@@ -514,7 +638,21 @@ export default function App() {
           />
         )}
 
-        {/* 7. Configurações & Backup */}
+        {/* 7. Borderô Semanal de Pagamentos */}
+        {activeTab === 'borderos' && (
+          <BorderoView
+            borderos={borderos}
+            onAddBordero={handleAddBordero}
+            onUpdateBordero={handleUpdateBordero}
+            onDeleteBordero={handleDeleteBordero}
+            onAddItem={handleAddBorderoItem}
+            onUpdateItem={handleUpdateBorderoItem}
+            onDeleteItem={handleDeleteBorderoItem}
+            onToggleStatus={handleToggleBorderoStatus}
+          />
+        )}
+
+        {/* 8. Configurações & Backup */}
         {activeTab === 'settings' && (
           <SyncSettingsView
             settings={settings || ({ id: 'default', excelFilePath: '', syncIntervalSeconds: 0, autoSyncEnabled: false, lastSyncedAt: null, columnMapping: {} as any })}

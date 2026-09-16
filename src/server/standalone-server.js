@@ -1524,10 +1524,37 @@ const server = http.createServer(async (req, res) => {
   } else if (url === '/api/sales' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(memoryDb.sales));
-  } else if (url === '/api/sync/trigger' && req.method === 'POST') {
-    const result = processExcelSync();
+  } else if (url === '/api/borderos' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result));
+    res.end(JSON.stringify(memoryDb.borderos || []));
+  } else if (url === '/api/borderos' && req.method === 'POST') {
+    try {
+      const data = await parseRequestBody(req);
+      const newB = {
+        id: `bordero_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        title: data.title || 'Borderô Semanal',
+        startDate: data.startDate || new Date().toISOString().split('T')[0],
+        endDate: data.endDate || new Date().toISOString().split('T')[0],
+        notes: data.notes || '',
+        items: data.items || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (!memoryDb.borderos) memoryDb.borderos = [];
+      memoryDb.borderos.unshift(newB);
+      saveDatabaseDebounced();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(newB));
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Erro ao salvar borderô' }));
+    }
+  } else if (url.startsWith('/api/borderos/') && req.method === 'DELETE') {
+    const bId = url.split('/')[3];
+    memoryDb.borderos = (memoryDb.borderos || []).filter(b => b.id !== bId);
+    saveDatabaseDebounced();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true }));
   } else {
     const served = serveStaticFile(req, res);
     if (!served) {

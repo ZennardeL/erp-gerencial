@@ -8,7 +8,8 @@ import {
   Shirt, 
   Users,
   CheckSquare,
-  ShieldCheck
+  ShieldCheck,
+  Receipt
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -179,6 +180,19 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Wrench className="w-4 h-4" />
             Manutenções & Custos
+          </button>
+
+          {/* 7. Borderô Semanal */}
+          <button
+            onClick={() => setActiveTab('borderos')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap ${
+              activeTab === 'borderos'
+                ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-orange-400" />
+            Borderô Semanal
           </button>
         </div>
       </div>

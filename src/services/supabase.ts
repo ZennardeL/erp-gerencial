@@ -11,7 +11,9 @@ import {
   MaintenanceRecord, 
   MaintenanceSummary, 
   OperationalDashboardSummary,
-  AppSetting
+  AppSetting,
+  BorderoWeekly,
+  BorderoItem
 } from '../shared/types';
 
 // Supabase Credentials
@@ -840,4 +842,175 @@ export async function saveSettings(settings: Partial<AppSetting>): Promise<AppSe
     lastSyncedAt: null,
     columnMapping: {} as any
   };
+}
+
+// --- 8. BORDERÔS SEMANAIS & CONTAS A PAGAR ---
+export async function getBorderos(): Promise<BorderoWeekly[]> {
+  const { data: borderos, error: bErr } = await supabase
+    .from('erp_borderos')
+    .select('*')
+    .order('start_date', { ascending: false });
+
+  if (bErr) {
+    console.error('Erro ao buscar borderôs:', bErr);
+    return [];
+  }
+
+  const { data: items, error: iErr } = await supabase
+    .from('erp_bordero_items')
+    .select('*')
+    .order('due_date', { ascending: true })
+    .order('amount', { ascending: false });
+
+  if (iErr) {
+    console.error('Erro ao buscar itens de borderô:', iErr);
+  }
+
+  const itemsByBordero: Record<string, BorderoItem[]> = {};
+  (items || []).forEach(item => {
+    if (!itemsByBordero[item.bordero_id]) itemsByBordero[item.bordero_id] = [];
+    itemsByBordero[item.bordero_id].push({
+      id: item.id,
+      borderoId: item.bordero_id,
+      recipient: item.recipient,
+      description: item.description || '',
+      dueDate: item.due_date,
+      amount: Number(item.amount) || 0,
+      billType: item.bill_type || 'OUTRO',
+      barcode: item.barcode || '',
+      status: item.status || 'PENDENTE',
+      paidAt: item.paid_at || null,
+      notes: item.notes || '',
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    });
+  });
+
+  return (borderos || []).map(b => ({
+    id: b.id,
+    title: b.title,
+    startDate: b.start_date,
+    endDate: b.end_date,
+    notes: b.notes || '',
+    items: itemsByBordero[b.id] || [],
+    createdAt: b.created_at,
+    updatedAt: b.updated_at
+  }));
+}
+
+export async function createBordero(data: Partial<BorderoWeekly>): Promise<BorderoWeekly> {
+  const id = `bordero_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const record = {
+    id,
+    title: data.title || `Borderô Semanal (${data.startDate || ''} a ${data.endDate || ''})`,
+    start_date: data.startDate || new Date().toISOString().split('T')[0],
+    end_date: data.endDate || new Date().toISOString().split('T')[0],
+    notes: data.notes || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase.from('erp_borderos').insert([record]);
+  if (error) throw error;
+
+  return {
+    id,
+    title: record.title,
+    startDate: record.start_date,
+    endDate: record.end_date,
+    notes: record.notes || '',
+    items: [],
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
+}
+
+export async function updateBordero(id: string, data: Partial<BorderoWeekly>): Promise<void> {
+  const updateData: any = { updated_at: new Date().toISOString() };
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.startDate !== undefined) updateData.start_date = data.startDate;
+  if (data.endDate !== undefined) updateData.end_date = data.endDate;
+  if (data.notes !== undefined) updateData.notes = data.notes;
+
+  const { error } = await supabase.from('erp_borderos').update(updateData).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteBordero(id: string): Promise<void> {
+  const { error } = await supabase.from('erp_borderos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function addBorderoItem(borderoId: string, item: Partial<BorderoItem>): Promise<BorderoItem> {
+  const id = `item_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const record = {
+    id,
+    bordero_id: borderoId,
+    recipient: item.recipient || 'Nova Conta',
+    description: item.description || null,
+    due_date: item.dueDate || new Date().toISOString().split('T')[0],
+    amount: item.amount !== undefined ? Number(item.amount) : 0,
+    bill_type: item.billType || 'OUTRO',
+    barcode: item.barcode || null,
+    status: item.status || 'PENDENTE',
+    paid_at: item.status === 'PAGO' ? new Date().toISOString() : null,
+    notes: item.notes || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase.from('erp_bordero_items').insert([record]);
+  if (error) throw error;
+
+  return {
+    id,
+    borderoId,
+    recipient: record.recipient,
+    description: record.description || '',
+    dueDate: record.due_date,
+    amount: record.amount,
+    billType: record.bill_type as any,
+    barcode: record.barcode || '',
+    status: record.status as any,
+    paidAt: record.paid_at,
+    notes: record.notes || '',
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
+}
+
+export async function updateBorderoItem(itemId: string, item: Partial<BorderoItem>): Promise<void> {
+  const updateData: any = { updated_at: new Date().toISOString() };
+  if (item.recipient !== undefined) updateData.recipient = item.recipient;
+  if (item.description !== undefined) updateData.description = item.description;
+  if (item.dueDate !== undefined) updateData.due_date = item.dueDate;
+  if (item.amount !== undefined) updateData.amount = Number(item.amount);
+  if (item.billType !== undefined) updateData.bill_type = item.billType;
+  if (item.barcode !== undefined) updateData.barcode = item.barcode;
+  if (item.notes !== undefined) updateData.notes = item.notes;
+  if (item.status !== undefined) {
+    updateData.status = item.status;
+    updateData.paid_at = item.status === 'PAGO' ? (item.paidAt || new Date().toISOString()) : null;
+  }
+
+  const { error } = await supabase.from('erp_bordero_items').update(updateData).eq('id', itemId);
+  if (error) throw error;
+}
+
+export async function deleteBorderoItem(itemId: string): Promise<void> {
+  const { error } = await supabase.from('erp_bordero_items').delete().eq('id', itemId);
+  if (error) throw error;
+}
+
+export async function toggleBorderoItemStatus(itemId: string, nextStatus: 'PENDENTE' | 'PAGO'): Promise<void> {
+  const { error } = await supabase
+    .from('erp_bordero_items')
+    .update({
+      status: nextStatus,
+      paid_at: nextStatus === 'PAGO' ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', itemId);
+
+  if (error) throw error;
 }
