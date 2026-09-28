@@ -23,3 +23,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+.header-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.header-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.header-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.4);
+  border-radius: 9999px;
+}
+.header-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}

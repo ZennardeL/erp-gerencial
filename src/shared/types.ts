@@ -348,6 +348,11 @@ export type BorderoBillType =
   | 'GUIA_BOLETO'
   | 'PIX'
   | 'FOLHA_SALARIO'
+  | 'EMPRESTIMO'
+  | 'LIMPEZA_INSUMOS'
+  | 'MANUTENCAO'
+  | 'ALUGUEL_IMOVEL'
+  | 'BENEFICIOS_PARCERIA'
   | 'OUTRO';
 
 export interface BorderoItem {
@@ -376,4 +381,35 @@ export interface BorderoWeekly {
   createdAt: string;
   updatedAt?: string;
 }
+
+export type RegulatoryCategory =
+  | 'AVCB'
+  | 'ALVARA'
+  | 'DEDETIZACAO'
+  | 'SANITARIA'
+  | 'AGUA'
+  | 'SST'
+  | 'CREF'
+  | 'SEGURO'
+  | 'OUTRO';
+
+export type RegulatoryStatus = 'REGULAR' | 'A_VENCER' | 'VENCIDO' | 'EM_RENOVACAO' | 'ISENTO';
+
+export interface RegulatoryDocument {
+  id: string;
+  title: string;
+  category: RegulatoryCategory;
+  documentNumber?: string;
+  issuingBody?: string;
+  issueDate?: string; // YYYY-MM-DD
+  expirationDate?: string | null; // YYYY-MM-DD
+  status: RegulatoryStatus;
+  fileName?: string;
+  fileDataUrl?: string;
+  fileSizeFormatted?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 

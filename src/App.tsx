@@ -8,6 +8,7 @@ import { CleaningInventoryView } from './components/CleaningInventoryView';
 import { MaintenanceTrackerView } from './components/MaintenanceTrackerView';
 import { SyncSettingsView } from './components/SyncSettingsView';
 import { BorderoView } from './components/BorderoView';
+import { RegulatoryDocsView } from './components/RegulatoryDocsView';
 import { 
   AppSetting, 
   CleaningProduct, 
@@ -22,7 +23,8 @@ import {
   TaskItem, 
   OperationalDashboardSummary,
   BorderoWeekly,
-  BorderoItem
+  BorderoItem,
+  RegulatoryDocument
 } from './shared/types';
 import {
   getEmployees,
@@ -66,7 +68,11 @@ import {
   addBorderoItem,
   updateBorderoItem,
   deleteBorderoItem,
-  toggleBorderoItemStatus
+  toggleBorderoItemStatus,
+  getRegulatoryDocuments,
+  createRegulatoryDocument,
+  updateRegulatoryDocument,
+  deleteRegulatoryDocument
 } from './services/supabase';
 
 export default function App() {
@@ -92,6 +98,9 @@ export default function App() {
   // Borderô Semanal State
   const [borderos, setBorderos] = useState<BorderoWeekly[]>([]);
 
+  // Alvarás & Licenças State
+  const [regulatoryDocs, setRegulatoryDocs] = useState<RegulatoryDocument[]>([]);
+
   // Calculated Badges
   const expiringDocsCount = employees.reduce((acc, emp) => {
     const now = new Date();
@@ -105,6 +114,16 @@ export default function App() {
     }).length;
     return acc + count;
   }, 0);
+
+  const expiringRegulatoryCount = regulatoryDocs.filter(doc => {
+    if (doc.status === 'EM_RENOVACAO' || doc.status === 'ISENTO') return false;
+    if (!doc.expirationDate) return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const exp = new Date(doc.expirationDate + 'T00:00:00');
+    const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays <= 45;
+  }).length;
 
   const pendingTasksCount = tasks.filter(t => t.status !== 'CONCLUIDA').length;
 
@@ -161,6 +180,11 @@ export default function App() {
           setBorderos(res);
           break;
         }
+        case 'regulatory': {
+          const res = await getRegulatoryDocuments();
+          setRegulatoryDocs(res);
+          break;
+        }
         case 'settings': {
           const resSet = await getSettings();
           setSettings(resSet);
@@ -177,6 +201,7 @@ export default function App() {
     getEmployees().then(setEmployees).catch(() => {});
     getTasks().then(setTasks).catch(() => {});
     getCleaningProducts().then(setCleaningProducts).catch(() => {});
+    getRegulatoryDocuments().then(setRegulatoryDocs).catch(() => {});
     getSettings().then(setSettings).catch(() => {});
     getBorderos().then(setBorderos).catch(() => {});
 
@@ -566,12 +591,44 @@ export default function App() {
     }
   };
 
+  // --- HANDLERS: DOCUMENTOS REGULATÓRIOS & ALVARÁS ---
+  const handleAddRegulatoryDoc = async (doc: Partial<RegulatoryDocument>) => {
+    try {
+      const created = await createRegulatoryDocument(doc);
+      setRegulatoryDocs(prev => [created, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao cadastrar documento regulatório');
+    }
+  };
+
+  const handleEditRegulatoryDoc = async (id: string, doc: Partial<RegulatoryDocument>) => {
+    try {
+      await updateRegulatoryDocument(id, doc);
+      setRegulatoryDocs(prev => prev.map(d => d.id === id ? { ...d, ...doc } : d));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao atualizar documento regulatório');
+    }
+  };
+
+  const handleDeleteRegulatoryDoc = async (id: string) => {
+    try {
+      await deleteRegulatoryDocument(id);
+      setRegulatoryDocs(prev => prev.filter(d => d.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao excluir documento regulatório');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         expiringDocsCount={expiringDocsCount}
+        expiringRegulatoryCount={expiringRegulatoryCount}
         pendingTasksCount={pendingTasksCount}
         lowStockCleaningCount={lowStockCleaningCount}
       />
@@ -598,7 +655,18 @@ export default function App() {
           />
         )}
 
-        {/* 3. Lista de Tarefas */}
+        {/* 3. Alvarás, Licenças & Documentos Regulatórios */}
+        {activeTab === 'regulatory' && (
+          <RegulatoryDocsView
+            documents={regulatoryDocs}
+            onAddDocument={handleAddRegulatoryDoc}
+            onEditDocument={handleEditRegulatoryDoc}
+            onDeleteDocument={handleDeleteRegulatoryDoc}
+            onRefresh={() => fetchForTab('regulatory')}
+          />
+        )}
+
+        {/* 4. Lista de Tarefas */}
         {activeTab === 'tasks' && (
           <TaskListView
             tasks={tasks}

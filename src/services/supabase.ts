@@ -13,7 +13,8 @@ import {
   OperationalDashboardSummary,
   AppSetting,
   BorderoWeekly,
-  BorderoItem
+  BorderoItem,
+  RegulatoryDocument
 } from '../shared/types';
 
 // Supabase Credentials
@@ -1034,3 +1035,97 @@ export async function uploadBorderoPdf(fileName: string, pdfBlob: Blob): Promise
     return '';
   }
 }
+
+// --- 8. REGULATORY DOCUMENTS (AVCB, ALVARÁ, DEDETIZAÇÃO, ETC.) ---
+export async function getRegulatoryDocuments(): Promise<RegulatoryDocument[]> {
+  const { data, error } = await supabase
+    .from('erp_regulatory_documents')
+    .select('*')
+    .order('expiration_date', { ascending: true, nullsFirst: false });
+
+  if (error) {
+    console.error('Erro ao buscar documentos regulatórios:', error);
+    return [];
+  }
+
+  return (data || []).map(d => ({
+    id: d.id,
+    title: d.title,
+    category: d.category,
+    documentNumber: d.document_number || '',
+    issuingBody: d.issuing_body || '',
+    issueDate: d.issue_date || '',
+    expirationDate: d.expiration_date || null,
+    status: d.status || 'REGULAR',
+    fileName: d.file_name || '',
+    fileDataUrl: d.file_data_url || '',
+    fileSizeFormatted: d.file_size_formatted || '',
+    notes: d.notes || '',
+    createdAt: d.created_at,
+    updatedAt: d.updated_at
+  }));
+}
+
+export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>): Promise<RegulatoryDocument> {
+  const id = `reg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const record = {
+    id,
+    title: doc.title || 'Novo Documento Regulatório',
+    category: doc.category || 'OUTRO',
+    document_number: doc.documentNumber || null,
+    issuing_body: doc.issuingBody || null,
+    issue_date: doc.issueDate || null,
+    expiration_date: doc.expirationDate || null,
+    status: doc.status || 'REGULAR',
+    file_name: doc.fileName || null,
+    file_data_url: doc.fileDataUrl || null,
+    file_size_formatted: doc.fileSizeFormatted || null,
+    notes: doc.notes || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase.from('erp_regulatory_documents').insert([record]);
+  if (error) throw error;
+
+  return {
+    id,
+    title: record.title,
+    category: record.category as any,
+    documentNumber: record.document_number || '',
+    issuingBody: record.issuing_body || '',
+    issueDate: record.issue_date || '',
+    expirationDate: record.expiration_date || null,
+    status: record.status as any,
+    fileName: record.file_name || '',
+    fileDataUrl: record.file_data_url || '',
+    fileSizeFormatted: record.file_size_formatted || '',
+    notes: record.notes || '',
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
+}
+
+export async function updateRegulatoryDocument(id: string, doc: Partial<RegulatoryDocument>): Promise<void> {
+  const updateData: any = { updated_at: new Date().toISOString() };
+  if (doc.title !== undefined) updateData.title = doc.title;
+  if (doc.category !== undefined) updateData.category = doc.category;
+  if (doc.documentNumber !== undefined) updateData.document_number = doc.documentNumber;
+  if (doc.issuingBody !== undefined) updateData.issuing_body = doc.issuingBody;
+  if (doc.issueDate !== undefined) updateData.issue_date = doc.issueDate;
+  if (doc.expirationDate !== undefined) updateData.expiration_date = doc.expirationDate;
+  if (doc.status !== undefined) updateData.status = doc.status;
+  if (doc.fileName !== undefined) updateData.file_name = doc.fileName;
+  if (doc.fileDataUrl !== undefined) updateData.file_data_url = doc.fileDataUrl;
+  if (doc.fileSizeFormatted !== undefined) updateData.file_size_formatted = doc.fileSizeFormatted;
+  if (doc.notes !== undefined) updateData.notes = doc.notes;
+
+  const { error } = await supabase.from('erp_regulatory_documents').update(updateData).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteRegulatoryDocument(id: string): Promise<void> {
+  const { error } = await supabase.from('erp_regulatory_documents').delete().eq('id', id);
+  if (error) throw error;
+}
+

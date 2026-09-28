@@ -289,6 +289,36 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
     return { totalAmount, totalPaid, totalPending, itemsCount, paidCount };
   }, [currentBordero]);
 
+  // Helper for human-readable type labels
+  const getBillTypeLabel = (type: BorderoBillType) => {
+    switch (type) {
+      case 'CONCESSIONARIA':
+        return 'Concessionária';
+      case 'SISTEMA_BOLETO':
+        return 'Sistema / Boleto';
+      case 'MARKETING':
+        return 'Marketing';
+      case 'GUIA_BOLETO':
+        return 'Imposto / Guia';
+      case 'PIX':
+        return 'PIX';
+      case 'FOLHA_SALARIO':
+        return 'Folha / Salários';
+      case 'EMPRESTIMO':
+        return 'Empréstimo / Financiamento';
+      case 'LIMPEZA_INSUMOS':
+        return 'Insumos de Limpeza';
+      case 'MANUTENCAO':
+        return 'Manutenção / Reparo';
+      case 'ALUGUEL_IMOVEL':
+        return 'Aluguel / Locação';
+      case 'BENEFICIOS_PARCERIA':
+        return 'Benefício / Parceria';
+      default:
+        return 'Outro';
+    }
+  };
+
   // Type badge helper
   const getBillTypeBadge = (type: BorderoBillType) => {
     switch (type) {
@@ -304,6 +334,16 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PIX</span>;
       case 'FOLHA_SALARIO':
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">FOLHA / RH</span>;
+      case 'EMPRESTIMO':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">EMPRÉSTIMOS</span>;
+      case 'LIMPEZA_INSUMOS':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20">INSUMOS DE LIMPEZA</span>;
+      case 'MANUTENCAO':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">MANUTENÇÃO</span>;
+      case 'ALUGUEL_IMOVEL':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/10 text-violet-400 border border-violet-500/20">ALUGUEL / LOCAÇÃO</span>;
+      case 'BENEFICIOS_PARCERIA':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">BENEFÍCIO / PARCERIA</span>;
       default:
         return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">OUTRO</span>;
     }
@@ -870,8 +910,13 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                   <option value="SISTEMA_BOLETO">Sistema / Software / Boleto Bancário</option>
                   <option value="MARKETING">Marketing / Anúncios Google / Tráfego Pago</option>
                   <option value="GUIA_BOLETO">Guia de Imposto / Taxa / Direitos Autorais (ECAD)</option>
-                  <option value="PIX">Pagamento via PIX</option>
                   <option value="FOLHA_SALARIO">Folha de Pagamento / Salários</option>
+                  <option value="EMPRESTIMO">Empréstimos / Financiamentos</option>
+                  <option value="LIMPEZA_INSUMOS">Insumos de Limpeza / Higiene / Descartáveis</option>
+                  <option value="MANUTENCAO">Manutenção Predial / Reparo de Equipamentos</option>
+                  <option value="ALUGUEL_IMOVEL">Aluguel / Locação de Imóvel ou Estacionamento</option>
+                  <option value="BENEFICIOS_PARCERIA">Benefício aos Alunos / Parcerias (N2B, etc.)</option>
+                  <option value="PIX">Pagamento via PIX</option>
                   <option value="OUTRO">Outro Tipo</option>
                 </select>
               </div>
@@ -1119,7 +1164,7 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                               </td>
                               <td className="py-1.5 px-2.5 text-center">
                                 <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">
-                                  {item.billType}
+                                  {getBillTypeLabel(item.billType)}
                                 </span>
                               </td>
                               <td className="py-1.5 px-2.5 text-right font-black font-mono text-slate-900">
@@ -1268,7 +1313,7 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                           </td>
                           <td className="py-1.5 px-2.5 text-center">
                             <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300">
-                              {item.billType}
+                              {getBillTypeLabel(item.billType)}
                             </span>
                           </td>
                           <td className="py-1.5 px-2.5 text-right font-black font-mono text-slate-900">
