@@ -51,13 +51,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onRefresh}
-          className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-lg transition border border-slate-700 w-full sm:w-auto"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Atualizar Dados
-        </button>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => onNavigateTab('owner_diagnosis')}
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-md shadow-emerald-600/20 flex-1 sm:flex-initial"
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            👑 Abrir Painel do Patrão & DRE
+          </button>
+          <button
+            onClick={onRefresh}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-lg transition border border-slate-700 flex-1 sm:flex-initial"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Atualizar Dados
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards Grid (2-column on mobile, 4-column on desktop) */}

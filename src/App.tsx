@@ -9,6 +9,7 @@ import { MaintenanceTrackerView } from './components/MaintenanceTrackerView';
 import { SyncSettingsView } from './components/SyncSettingsView';
 import { BorderoView } from './components/BorderoView';
 import { RegulatoryDocsView } from './components/RegulatoryDocsView';
+import { OwnerDiagnosisView } from './components/OwnerDiagnosisView';
 import { 
   AppSetting, 
   CleaningProduct, 
@@ -641,6 +642,11 @@ export default function App() {
             onNavigateTab={setActiveTab}
             onRefresh={() => fetchForTab('dashboard')} 
           />
+        )}
+
+        {/* 1.5. Painel do Patrão & DRE (Diagnóstico Financeiro EVO) */}
+        {activeTab === 'owner_diagnosis' && (
+          <OwnerDiagnosisView />
         )}
 
         {/* 2. Ficha de Funcionários & CREF */}
