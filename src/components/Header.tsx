@@ -230,25 +230,6 @@ export const Header: React.FC<HeaderProps> = ({
               Dashboard Operacional
             </button>
 
-            {/* 1.5. Painel do Patrão & DRE (Diagnóstico Financeiro EVO) */}
-            <button
-              data-tab="owner_diagnosis"
-              onClick={() => handleTabClick('owner_diagnosis')}
-              className={`relative flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'owner_diagnosis'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-bold'
-                  : 'text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              👑 Painel do Patrão & DRE
-              <span className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase ${
-                activeTab === 'owner_diagnosis' ? 'bg-white text-emerald-900' : 'bg-emerald-500 text-slate-950'
-              }`}>
-                NOVO
-              </span>
-            </button>
-
             {/* 2. Ficha de Funcionários & CREF */}
             <button
               data-tab="employees"
