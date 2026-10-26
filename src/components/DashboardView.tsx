@@ -63,7 +63,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow-md shadow-indigo-600/20 flex-1 sm:flex-initial cursor-pointer"
           >
             <CalendarClock className="w-3.5 h-3.5" />
-            Contas Fixas (EVO)
+            📅 Calendário de Contas (Patrão)
           </button>
           <button
             onClick={onRefresh}

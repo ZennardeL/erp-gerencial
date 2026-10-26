@@ -256,6 +256,25 @@ export const Header: React.FC<HeaderProps> = ({
               Dashboard Operacional
             </button>
 
+            {/* 2. Calendário de Contas & Despesas Fixas (EVO) */}
+            <button
+              data-tab="fixed_bills"
+              onClick={() => handleTabClick('fixed_bills')}
+              className={`relative flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'fixed_bills'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <CalendarClock className={`w-4 h-4 ${activeTab === 'fixed_bills' ? 'text-white' : 'text-indigo-400'}`} />
+              Calendário & Contas Fixas
+              {activeFixedBillsCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {activeFixedBillsCount}
+                </span>
+              )}
+            </button>
+
             {/* 2. Ficha de Funcionários & CREF */}
             <button
               data-tab="employees"
@@ -372,25 +391,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Receipt className="w-4 h-4 text-orange-400" />
               Borderô Semanal
-            </button>
-
-            {/* 9. Contas Fixas (Padrão EVO) */}
-            <button
-              data-tab="fixed_bills"
-              onClick={() => handleTabClick('fixed_bills')}
-              className={`relative flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'fixed_bills'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
-            >
-              <CalendarClock className={`w-4 h-4 ${activeTab === 'fixed_bills' ? 'text-white' : 'text-indigo-400'}`} />
-              Contas Fixas (EVO)
-              {activeFixedBillsCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  {activeFixedBillsCount}
-                </span>
-              )}
             </button>
           </div>
 
