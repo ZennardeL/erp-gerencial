@@ -14,7 +14,10 @@ import {
   AppSetting,
   BorderoWeekly,
   BorderoItem,
-  RegulatoryDocument
+  RegulatoryDocument,
+  FixedBill,
+  ColetivasSummary,
+  PdvEcosystemSummary
 } from '../shared/types';
 
 // Supabase Credentials
@@ -747,12 +750,15 @@ export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
 
 // --- 6. OPERATIONAL DASHBOARD SUMMARY ---
 export async function getOperationalDashboardSummary(): Promise<OperationalDashboardSummary> {
-  const [employees, tasks, cleaning, maintenance, uniforms] = await Promise.all([
+  const [employees, tasks, cleaning, maintenance, uniforms, coletivasSummary, pdvSummary, fixedBills] = await Promise.all([
     getEmployees(),
     getTasks(),
     getCleaningProducts(),
     getMaintenanceRecords(),
-    getUniformItems()
+    getUniformItems(),
+    getColetivasSummary().catch(() => undefined),
+    getPdvEcosystemSummary().catch(() => undefined),
+    getFixedBills().catch(() => [])
   ]);
 
   const now = new Date();
@@ -790,6 +796,10 @@ export async function getOperationalDashboardSummary(): Promise<OperationalDashb
   const totalUniformStock = uniforms.reduce((acc, u) => acc + u.currentQuantity, 0);
   const lowStockUniformCount = uniforms.filter(u => u.currentQuantity <= u.minQuantity).length;
 
+  const activeFixedBills = (fixedBills || []).filter(b => b.active);
+  const todayDay = now.getDate();
+  const dueNext7 = activeFixedBills.filter(b => b.dueDay >= todayDay && b.dueDay <= todayDay + 7);
+
   return {
     kpis: {
       totalEmployees: employees.length,
@@ -810,7 +820,15 @@ export async function getOperationalDashboardSummary(): Promise<OperationalDashb
     expiringDocumentsList,
     recentMaintenance: maintenance.slice(0, 5),
     urgentTasks: pendingTasks.slice(0, 5),
-    criticalCleaningProducts: criticalCleaning.slice(0, 5)
+    criticalCleaningProducts: criticalCleaning.slice(0, 5),
+    coletivasSummary,
+    pdvSummary,
+    fixedBillsSummary: {
+      totalActiveMonthly: activeFixedBills.reduce((acc, b) => acc + (Number(b.defaultAmount) || 0), 0),
+      activeCount: activeFixedBills.length,
+      dueNext7DaysCount: dueNext7.length,
+      dueNext7DaysAmount: dueNext7.reduce((acc, b) => acc + (Number(b.defaultAmount) || 0), 0)
+    }
   };
 }
 
@@ -1128,4 +1146,298 @@ export async function deleteRegulatoryDocument(id: string): Promise<void> {
   const { error } = await supabase.from('erp_regulatory_documents').delete().eq('id', id);
   if (error) throw error;
 }
+
+// --- 9. CONTAS FIXAS RECORRENTES (PADRÃO CONTAS A PAGAR DO EVO) ---
+export async function getFixedBills(): Promise<FixedBill[]> {
+  const { data, error } = await supabase
+    .from('erp_fixed_bills')
+    .select('*')
+    .order('due_day', { ascending: true })
+    .order('default_amount', { ascending: false });
+
+  if (error) {
+    console.error('Erro ao buscar contas fixas:', error);
+    return [];
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    recipient: row.recipient,
+    description: row.description || '',
+    evoCostCenter: row.evo_cost_center || 'Operacional Geral',
+    billType: (row.bill_type || 'SISTEMA_BOLETO') as any,
+    dueDay: Number(row.due_day) || 10,
+    defaultAmount: Number(row.default_amount) || 0,
+    amountType: (row.amount_type === 'VARIAVEL' ? 'VARIAVEL' : 'FIXO'),
+    paymentMethod: (row.payment_method || 'BOLETO') as any,
+    active: row.active !== false,
+    endDate: row.end_date || null,
+    notes: row.notes || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }));
+}
+
+export async function createFixedBill(bill: Partial<FixedBill>): Promise<FixedBill> {
+  const id = `fixed_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const record = {
+    id,
+    recipient: bill.recipient || 'Nova Conta Fixa',
+    description: bill.description || null,
+    evo_cost_center: bill.evoCostCenter || 'Operacional Geral',
+    bill_type: bill.billType || 'SISTEMA_BOLETO',
+    due_day: Math.min(31, Math.max(1, Number(bill.dueDay) || 10)),
+    default_amount: Number(bill.defaultAmount) || 0,
+    amount_type: bill.amountType || 'FIXO',
+    payment_method: bill.paymentMethod || 'BOLETO',
+    active: bill.active !== undefined ? bill.active : true,
+    end_date: bill.endDate || null,
+    notes: bill.notes || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { error } = await supabase.from('erp_fixed_bills').insert([record]);
+  if (error) throw error;
+
+  return {
+    id,
+    recipient: record.recipient,
+    description: record.description || '',
+    evoCostCenter: record.evo_cost_center,
+    billType: record.bill_type as any,
+    dueDay: record.due_day,
+    defaultAmount: record.default_amount,
+    amountType: record.amount_type as any,
+    paymentMethod: record.payment_method as any,
+    active: record.active,
+    endDate: record.end_date,
+    notes: record.notes || '',
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
+  };
+}
+
+export async function updateFixedBill(id: string, bill: Partial<FixedBill>): Promise<void> {
+  const updateData: any = { updated_at: new Date().toISOString() };
+  if (bill.recipient !== undefined) updateData.recipient = bill.recipient;
+  if (bill.description !== undefined) updateData.description = bill.description;
+  if (bill.evoCostCenter !== undefined) updateData.evo_cost_center = bill.evoCostCenter;
+  if (bill.billType !== undefined) updateData.bill_type = bill.billType;
+  if (bill.dueDay !== undefined) updateData.due_day = Math.min(31, Math.max(1, Number(bill.dueDay) || 10));
+  if (bill.defaultAmount !== undefined) updateData.default_amount = Number(bill.defaultAmount) || 0;
+  if (bill.amountType !== undefined) updateData.amount_type = bill.amountType;
+  if (bill.paymentMethod !== undefined) updateData.payment_method = bill.paymentMethod;
+  if (bill.active !== undefined) updateData.active = bill.active;
+  if (bill.endDate !== undefined) updateData.end_date = bill.endDate || null;
+  if (bill.notes !== undefined) updateData.notes = bill.notes;
+
+  const { error } = await supabase.from('erp_fixed_bills').update(updateData).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteFixedBill(id: string): Promise<void> {
+  const { error } = await supabase.from('erp_fixed_bills').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// --- 10. INTEGRAÇÃO ECOSSISTEMA: APP DE COLETIVAS & PDV RECEPÇÃO ---
+export async function getColetivasSummary(monthYearStr?: string): Promise<ColetivasSummary> {
+  const targetMonth = monthYearStr || new Date().toISOString().substring(0, 7);
+  const startDate = `${targetMonth}-01`;
+  const [y, m] = targetMonth.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const endDate = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
+
+  const [{ data: teachers }, { data: checkins }] = await Promise.all([
+    supabase
+      .from('coletivas_teachers')
+      .select('id, name, short_name, rate_per_class, payment_method, active')
+      .eq('tenant_id', 'default')
+      .order('name', { ascending: true }),
+    supabase
+      .from('coletivas_checkins')
+      .select('*')
+      .eq('tenant_id', 'default')
+      .eq('status', 'CONFIRMADA')
+      .gte('class_date', startDate)
+      .lte('class_date', endDate)
+  ]);
+
+  const validCheckins = checkins || [];
+  const totalClassesMonth = validCheckins.length;
+  const totalStudentsMonth = validCheckins.reduce((sum, c) => sum + (Number(c.students_count) || 0), 0);
+  const avgStudentsPerClass = totalClassesMonth > 0 ? Number((totalStudentsMonth / totalClassesMonth).toFixed(1)) : 0;
+
+  // Top Modality
+  const modMap: Record<string, { count: number; students: number }> = {};
+  validCheckins.forEach(c => {
+    const mod = (c.modality || 'Outro').trim();
+    if (!modMap[mod]) modMap[mod] = { count: 0, students: 0 };
+    modMap[mod].count += 1;
+    modMap[mod].students += Number(c.students_count) || 0;
+  });
+
+  let topModality = '—';
+  let topModalityAvg = 0;
+  Object.entries(modMap).forEach(([mod, stats]) => {
+    const avg = stats.count > 0 ? stats.students / stats.count : 0;
+    if (avg > topModalityAvg) {
+      topModalityAvg = Number(avg.toFixed(1));
+      topModality = mod;
+    }
+  });
+
+  // Teachers Payroll Calculation
+  const teachersById: Record<string, any> = {};
+  (teachers || []).forEach(t => {
+    teachersById[t.id] = {
+      id: t.id,
+      name: t.name,
+      shortName: t.short_name || t.name.split(' ')[0],
+      classesCount: 0,
+      studentsCount: 0,
+      ratePerClass: Number(t.rate_per_class) || 0,
+      totalAmount: 0,
+      paymentMethod: t.payment_method || 'HOLERITE'
+    };
+  });
+
+  validCheckins.forEach(c => {
+    const t = teachersById[c.teacher_id];
+    if (t) {
+      t.classesCount += 1;
+      t.studentsCount += Number(c.students_count) || 0;
+      const rate = c.rate_snapshot !== null && c.rate_snapshot !== undefined ? Number(c.rate_snapshot) : t.ratePerClass;
+      t.totalAmount += rate;
+    }
+  });
+
+  const teachersSummary = Object.values(teachersById)
+    .filter((t: any) => t.classesCount > 0)
+    .sort((a: any, b: any) => b.totalAmount - a.totalAmount);
+
+  const totalPayrollMonth = teachersSummary.reduce((sum: number, t: any) => sum + t.totalAmount, 0);
+  const totalHoleriteMonth = teachersSummary
+    .filter((t: any) => t.paymentMethod === 'HOLERITE')
+    .reduce((sum: number, t: any) => sum + t.totalAmount, 0);
+  const totalReciboMonth = teachersSummary
+    .filter((t: any) => t.paymentMethod !== 'HOLERITE')
+    .reduce((sum: number, t: any) => sum + t.totalAmount, 0);
+
+  return {
+    monthRef: targetMonth,
+    totalClassesMonth,
+    totalStudentsMonth,
+    avgStudentsPerClass,
+    topModality,
+    topModalityAvg,
+    totalPayrollMonth,
+    totalHoleriteMonth,
+    totalReciboMonth,
+    teachersSummary
+  };
+}
+
+export async function getPdvEcosystemSummary(monthYearStr?: string): Promise<PdvEcosystemSummary> {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const targetMonth = monthYearStr || todayStr.substring(0, 7);
+  const monthStartIso = `${targetMonth}-01T00:00:00.000Z`;
+
+  const [{ data: sales }, { data: products }, { data: consumptions }, { data: openShifts }] = await Promise.all([
+    supabase
+      .from('sales')
+      .select('id, total, profit, status, created_at')
+      .eq('tenant_id', 'default')
+      .eq('status', 'CONCLUIDA')
+      .gte('created_at', monthStartIso),
+    supabase
+      .from('products')
+      .select('id, name, stock, min_stock, price, active')
+      .eq('tenant_id', 'default'),
+    supabase
+      .from('internal_consumptions')
+      .select('*')
+      .eq('tenant_id', 'default')
+      .eq('status', 'ATIVO'),
+    supabase
+      .from('shifts')
+      .select('operator_name, status')
+      .eq('tenant_id', 'default')
+      .eq('status', 'OPEN')
+      .limit(1)
+  ]);
+
+  const validSales = sales || [];
+  const todaySales = validSales.filter(s => (s.created_at || '').startsWith(todayStr));
+
+  const revenueToday = todaySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+  const salesCountToday = todaySales.length;
+  const revenueMonth = validSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+  const profitMonth = validSales.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
+  const salesCountMonth = validSales.length;
+
+  // Vales / Consumo de Professores e Colaboradores
+  const employeeConsumptions = (consumptions || []).filter(c => c.type === 'FUNCIONARIO');
+  const pendingVales = employeeConsumptions.filter(c => c.payment_status !== 'PAGO');
+  const paidValesMonth = employeeConsumptions.filter(
+    c => c.payment_status === 'PAGO' && (c.paid_at || c.created_at || '').startsWith(targetMonth)
+  );
+
+  const pendingValesCount = pendingVales.length;
+  const pendingValesAmount = pendingVales.reduce((sum, c) => sum + (Number(c.total_value) || 0), 0);
+  const paidValesMonthAmount = paidValesMonth.reduce((sum, c) => sum + (Number(c.total_value) || 0), 0);
+
+  const valesByPersonMap: Record<string, { beneficiaryName: string; count: number; totalAmount: number; items: string[] }> = {};
+  pendingVales.forEach(c => {
+    const name = c.beneficiary_name || 'Colaborador';
+    if (!valesByPersonMap[name]) {
+      valesByPersonMap[name] = { beneficiaryName: name, count: 0, totalAmount: 0, items: [] };
+    }
+    valesByPersonMap[name].count += Number(c.qty) || 1;
+    valesByPersonMap[name].totalAmount += Number(c.total_value) || 0;
+    valesByPersonMap[name].items.push(`${c.qty || 1}x ${c.product_name}`);
+  });
+
+  const pendingValesByPerson = Object.values(valesByPersonMap).map(p => ({
+    beneficiaryName: p.beneficiaryName,
+    count: p.count,
+    totalAmount: p.totalAmount,
+    itemsList: p.items.slice(0, 3).join(', ')
+  }));
+
+  // Produtos críticos na Recepção
+  const activeProducts = (products || []).filter(p => p.active !== false && p.active !== 0);
+  const outOfStock = activeProducts.filter(p => (Number(p.stock) || 0) <= 0);
+  const lowStock = activeProducts.filter(p => (Number(p.stock) || 0) <= (Number(p.min_stock) || 5));
+
+  const criticalProducts = lowStock
+    .sort((a, b) => (Number(a.stock) || 0) - (Number(b.stock) || 0))
+    .slice(0, 6)
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      stock: Number(p.stock) || 0,
+      minStock: Number(p.min_stock) || 5,
+      price: Number(p.price) || 0
+    }));
+
+  return {
+    revenueToday,
+    salesCountToday,
+    revenueMonth,
+    profitMonth,
+    salesCountMonth,
+    activeShiftOperator: openShifts && openShifts.length > 0 ? openShifts[0].operator_name : null,
+    pendingValesCount,
+    pendingValesAmount,
+    paidValesMonthAmount,
+    pendingValesByPerson,
+    lowStockProductsCount: lowStock.length,
+    outOfStockProductsCount: outOfStock.length,
+    criticalProducts
+  };
+}
+
 

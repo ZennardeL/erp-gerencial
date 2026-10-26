@@ -12,7 +12,9 @@ import {
   Receipt,
   TrendingUp,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CalendarClock,
+  ExternalLink
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -22,6 +24,7 @@ interface HeaderProps {
   expiringRegulatoryCount?: number;
   pendingTasksCount?: number;
   lowStockCleaningCount?: number;
+  activeFixedBillsCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,7 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
   expiringDocsCount = 0,
   expiringRegulatoryCount = 0,
   pendingTasksCount = 0,
-  lowStockCleaningCount = 0
+  lowStockCleaningCount = 0,
+  activeFixedBillsCount = 0
 }) => {
   const tabsRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -160,8 +164,30 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Right Status Badge */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          {/* Right Status Badge & Ecosystem Links */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <a
+              href="https://panobianco-coletivas.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/20 hover:bg-violet-500/20 transition whitespace-nowrap"
+              title="Abrir App de Aulas Coletivas em nova guia"
+            >
+              <span>App Coletivas</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+
+            <a
+              href="https://panobianco-pdv-erp.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition whitespace-nowrap"
+              title="Abrir Sistema PDV Recepção em nova guia"
+            >
+              <span>App PDV</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+
             <div 
               className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap"
               title="Banco de Dados Supabase Ativo e Sincronizado"
@@ -346,6 +372,25 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Receipt className="w-4 h-4 text-orange-400" />
               Borderô Semanal
+            </button>
+
+            {/* 9. Contas Fixas (Padrão EVO) */}
+            <button
+              data-tab="fixed_bills"
+              onClick={() => handleTabClick('fixed_bills')}
+              className={`relative flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'fixed_bills'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <CalendarClock className={`w-4 h-4 ${activeTab === 'fixed_bills' ? 'text-white' : 'text-indigo-400'}`} />
+              Contas Fixas (EVO)
+              {activeFixedBillsCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {activeFixedBillsCount}
+                </span>
+              )}
             </button>
           </div>
 

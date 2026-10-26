@@ -22,9 +22,11 @@ import {
   ExternalLink,
   Sparkles,
   Info,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  CalendarClock
 } from 'lucide-react';
-import { BorderoWeekly, BorderoItem, BorderoBillType, WhatsAppMessagePayload } from '../shared/types';
+import { BorderoWeekly, BorderoItem, BorderoBillType, WhatsAppMessagePayload, FixedBill } from '../shared/types';
 import { formatCurrency, formatDate } from '../shared/formatters';
 import { WhatsAppApprovalModal } from './WhatsAppApprovalModal';
 import { uploadBorderoPdf } from '../services/supabase';
@@ -32,6 +34,7 @@ import html2pdf from 'html2pdf.js';
 
 interface BorderoViewProps {
   borderos: BorderoWeekly[];
+  fixedBills?: FixedBill[];
   ownerPhone?: string;
   managerPhone?: string;
   onUpdatePhoneSettings?: (role: 'owner' | 'manager', newPhone: string) => void;
@@ -42,10 +45,12 @@ interface BorderoViewProps {
   onUpdateItem: (itemId: string, item: Partial<BorderoItem>) => Promise<void>;
   onDeleteItem: (itemId: string) => Promise<void>;
   onToggleStatus: (itemId: string, nextStatus: 'PENDENTE' | 'PAGO') => Promise<void>;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const BorderoView: React.FC<BorderoViewProps> = ({
   borderos,
+  fixedBills = [],
   ownerPhone,
   managerPhone,
   onUpdatePhoneSettings,
@@ -55,7 +60,8 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
   onAddItem,
   onUpdateItem,
   onDeleteItem,
-  onToggleStatus
+  onToggleStatus,
+  onNavigateTab
 }) => {
   // Selected Bordero (defaults to most recent)
   const [selectedBorderoId, setSelectedBorderoId] = useState<string>(() => {
@@ -78,6 +84,95 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [whatsAppPayload, setWhatsAppPayload] = useState<WhatsAppMessagePayload | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  // Import Fixed Bills Modal State
+  const [showImportFixedModal, setShowImportFixedModal] = useState(false);
+  const [importScope, setImportScope] = useState<'WEEK' | 'ALL'>('WEEK');
+  const [selectedFixedIds, setSelectedFixedIds] = useState<Record<string, boolean>>({});
+  const [customFixedAmounts, setCustomFixedAmounts] = useState<Record<string, string>>({});
+  const [customFixedDates, setCustomFixedDates] = useState<Record<string, string>>({});
+  const [isImportingFixed, setIsImportingFixed] = useState(false);
+
+  // Helper to compute due date for a FixedBill inside currentBordero
+  const computeDueDateForBordero = (dueDay: number, bordero: BorderoWeekly | null) => {
+    if (!bordero) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}-${String(dueDay).padStart(2, '0')}`;
+    }
+    const [sy, sm, sd] = bordero.startDate.split('-').map(Number);
+    const [ey, em, ed] = bordero.endDate.split('-').map(Number);
+
+    // If start and end are in different months and dueDay <= ed, use end month
+    let targetYear = sy;
+    let targetMonth = sm;
+    if (sm !== em && dueDay <= ed) {
+      targetYear = ey;
+      targetMonth = em;
+    }
+
+    const maxDay = new Date(targetYear, targetMonth, 0).getDate();
+    const safeDay = Math.min(dueDay, maxDay);
+    return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+  };
+
+  const handleOpenImportFixedModal = () => {
+    if (!currentBordero) return;
+    const activeBills = fixedBills.filter(b => b.active);
+    const nextSelected: Record<string, boolean> = {};
+    const nextAmounts: Record<string, string> = {};
+    const nextDates: Record<string, string> = {};
+
+    activeBills.forEach(b => {
+      const dueStr = computeDueDateForBordero(b.dueDay, currentBordero);
+      nextDates[b.id] = dueStr;
+      nextAmounts[b.id] = String(b.defaultAmount);
+
+      const inWeekRange = dueStr >= currentBordero.startDate && dueStr <= currentBordero.endDate;
+      const alreadyExists = (currentBordero.items || []).some(
+        it => it.recipient.toLowerCase().trim() === b.recipient.toLowerCase().trim()
+      );
+      if (inWeekRange && !alreadyExists) {
+        nextSelected[b.id] = true;
+      }
+    });
+
+    setSelectedFixedIds(nextSelected);
+    setCustomFixedAmounts(nextAmounts);
+    setCustomFixedDates(nextDates);
+    setImportScope('WEEK');
+    setShowImportFixedModal(true);
+  };
+
+  const handleConfirmImportFixed = async () => {
+    if (!currentBordero) return;
+    const idsToImport = Object.keys(selectedFixedIds).filter(id => selectedFixedIds[id]);
+    if (idsToImport.length === 0) {
+      alert('Selecione ao menos uma conta fixa para importar.');
+      return;
+    }
+    setIsImportingFixed(true);
+    try {
+      for (const id of idsToImport) {
+        const bill = fixedBills.find(b => b.id === id);
+        if (!bill) continue;
+        const amt = parseFloat((customFixedAmounts[id] || String(bill.defaultAmount)).replace(',', '.')) || bill.defaultAmount;
+        const dDate = customFixedDates[id] || computeDueDateForBordero(bill.dueDay, currentBordero);
+        await onAddItem(currentBordero.id, {
+          recipient: bill.recipient,
+          description: bill.description ? `${bill.description} (${bill.evoCostCenter})` : `Centro EVO: ${bill.evoCostCenter}`,
+          dueDate: dDate,
+          amount: amt,
+          billType: bill.billType,
+          notes: bill.notes || ''
+        });
+      }
+      setShowImportFixedModal(false);
+    } finally {
+      setIsImportingFixed(false);
+    }
+  };
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -511,6 +606,27 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
             <Printer className="w-4 h-4 text-orange-400" />
             Visualizar / Imprimir A4
           </button>
+
+          <button
+            onClick={handleOpenImportFixedModal}
+            disabled={!currentBordero}
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer"
+            title="Importar automaticamente as Contas Fixas do EVO que vencem nesta semana"
+          >
+            <Zap className="w-4 h-4 text-amber-300" />
+            Puxar Contas Fixas (EVO)
+          </button>
+
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('fixed_bills')}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl transition cursor-pointer"
+              title="Abrir Cadastro Completo de Contas Fixas (EVO)"
+            >
+              <CalendarClock className="w-4 h-4" />
+              Cadastro Contas Fixas
+            </button>
+          )}
 
           <button
             onClick={handleOpenCreateItem}
@@ -1358,6 +1474,170 @@ export const BorderoView: React.FC<BorderoViewProps> = ({
                 <div className="border-b border-slate-400 w-44 mx-auto mb-1"></div>
                 <p className="text-[9px] font-bold uppercase text-slate-700">Visto Gerência / Diretoria</p>
                 <p className="text-[8px] text-slate-400">Aprovado para Pagamento</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Import Fixed Bills from EVO into Current Borderô */}
+      {showImportFixedModal && currentBordero && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-400" />
+                  Importar Contas Fixas do EVO para a Semana
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Período do Borderô: <strong className="text-white">{formatDate(currentBordero.startDate)} a {formatDate(currentBordero.endDate)}</strong>
+                </p>
+              </div>
+              <button onClick={() => setShowImportFixedModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scope Filter & Quick Selection */}
+            <div className="flex flex-wrap items-center justify-between gap-2 py-3 border-b border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImportScope('WEEK')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                    importScope === 'WEEK'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  📅 Vencimentos desta Semana
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportScope('ALL')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                    importScope === 'ALL'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  🌐 Todas as Contas Fixas do Mês ({fixedBills.filter(b => b.active).length})
+                </button>
+              </div>
+
+              <span className="text-slate-400">
+                Selecionadas:{' '}
+                <strong className="text-emerald-400">
+                  {Object.values(selectedFixedIds).filter(Boolean).length} conta(s)
+                </strong>
+              </span>
+            </div>
+
+            {/* List of Fixed Bills */}
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-800/70 my-2 pr-1">
+              {fixedBills
+                .filter(b => b.active)
+                .filter(b => {
+                  if (importScope === 'ALL') return true;
+                  const dStr = customFixedDates[b.id] || computeDueDateForBordero(b.dueDay, currentBordero);
+                  return dStr >= currentBordero.startDate && dStr <= currentBordero.endDate;
+                })
+                .map(bill => {
+                  const isChecked = !!selectedFixedIds[bill.id];
+                  const alreadyInBordero = (currentBordero.items || []).some(
+                    it => it.recipient.toLowerCase().trim() === bill.recipient.toLowerCase().trim()
+                  );
+                  return (
+                    <div
+                      key={bill.id}
+                      className={`py-3 px-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg transition ${
+                        isChecked ? 'bg-indigo-500/10' : 'hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <label className="flex items-start gap-3 cursor-pointer flex-1">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={e =>
+                            setSelectedFixedIds(prev => ({ ...prev, [bill.id]: e.target.checked }))
+                          }
+                          className="mt-1 w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                        />
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-bold text-white">{bill.recipient}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-950 text-indigo-300 border border-slate-800">
+                              Dia {String(bill.dueDay).padStart(2, '0')}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              bill.amountType === 'FIXO'
+                                ? 'bg-emerald-500/10 text-emerald-400'
+                                : 'bg-amber-500/10 text-amber-400'
+                            }`}>
+                              {bill.amountType}
+                            </span>
+                            {alreadyInBordero && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                ✅ Já consta nesta semana
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {bill.evoCostCenter} {bill.description ? `• ${bill.description}` : ''}
+                          </p>
+                        </div>
+                      </label>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <div>
+                          <span className="text-[9px] text-slate-500 block uppercase font-bold">Vencimento</span>
+                          <input
+                            type="date"
+                            value={customFixedDates[bill.id] || ''}
+                            onChange={e =>
+                              setCustomFixedDates(prev => ({ ...prev, [bill.id]: e.target.value }))
+                            }
+                            className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-white"
+                          />
+                        </div>
+                        <div className="w-28">
+                          <span className="text-[9px] text-slate-500 block uppercase font-bold">Valor (R$)</span>
+                          <input
+                            type="text"
+                            value={customFixedAmounts[bill.id] || ''}
+                            onChange={e =>
+                              setCustomFixedAmounts(prev => ({ ...prev, [bill.id]: e.target.value }))
+                            }
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-bold text-white text-right"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+              <span className="text-xs text-slate-400">
+                Você pode ajustar o valor das contas variáveis antes de importar.
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImportFixedModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isImportingFixed}
+                  onClick={handleConfirmImportFixed}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg disabled:opacity-50 cursor-pointer"
+                >
+                  {isImportingFixed ? 'Importando...' : '⚡ Importar Selecionadas para o Borderô'}
+                </button>
               </div>
             </div>
           </div>

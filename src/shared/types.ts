@@ -339,6 +339,80 @@ export interface OperationalDashboardSummary {
   recentMaintenance: MaintenanceRecord[];
   urgentTasks: TaskItem[];
   criticalCleaningProducts: CleaningProduct[];
+  coletivasSummary?: ColetivasSummary;
+  pdvSummary?: PdvEcosystemSummary;
+  fixedBillsSummary?: {
+    totalActiveMonthly: number;
+    activeCount: number;
+    dueNext7DaysCount: number;
+    dueNext7DaysAmount: number;
+  };
+}
+
+export interface FixedBill {
+  id: string;
+  recipient: string;
+  description?: string;
+  evoCostCenter: string;
+  billType: BorderoBillType;
+  dueDay: number;
+  defaultAmount: number;
+  amountType: 'FIXO' | 'VARIAVEL';
+  paymentMethod: 'BOLETO' | 'PIX' | 'DEBITO_AUTOMATICO' | 'TRANSFERENCIA_FOLHA' | 'GUIA_BOLETO';
+  active: boolean;
+  endDate?: string | null;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ColetivasSummary {
+  monthRef: string;
+  totalClassesMonth: number;
+  totalStudentsMonth: number;
+  avgStudentsPerClass: number;
+  topModality: string;
+  topModalityAvg: number;
+  totalPayrollMonth: number;
+  totalHoleriteMonth: number;
+  totalReciboMonth: number;
+  teachersSummary: {
+    id: string;
+    name: string;
+    shortName: string;
+    classesCount: number;
+    studentsCount: number;
+    ratePerClass: number;
+    totalAmount: number;
+    paymentMethod: string;
+  }[];
+}
+
+export interface PdvEcosystemSummary {
+  revenueToday: number;
+  salesCountToday: number;
+  revenueMonth: number;
+  profitMonth: number;
+  salesCountMonth: number;
+  activeShiftOperator?: string | null;
+  pendingValesCount: number;
+  pendingValesAmount: number;
+  paidValesMonthAmount: number;
+  pendingValesByPerson: {
+    beneficiaryName: string;
+    count: number;
+    totalAmount: number;
+    itemsList: string;
+  }[];
+  lowStockProductsCount: number;
+  outOfStockProductsCount: number;
+  criticalProducts: {
+    id: string;
+    name: string;
+    stock: number;
+    minStock: number;
+    price: number;
+  }[];
 }
 
 export type BorderoBillType = 

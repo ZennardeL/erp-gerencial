@@ -9,6 +9,7 @@ import { MaintenanceTrackerView } from './components/MaintenanceTrackerView';
 import { SyncSettingsView } from './components/SyncSettingsView';
 import { BorderoView } from './components/BorderoView';
 import { RegulatoryDocsView } from './components/RegulatoryDocsView';
+import { FixedBillsView } from './components/FixedBillsView';
 
 import { 
   AppSetting, 
@@ -25,7 +26,8 @@ import {
   OperationalDashboardSummary,
   BorderoWeekly,
   BorderoItem,
-  RegulatoryDocument
+  RegulatoryDocument,
+  FixedBill
 } from './shared/types';
 import {
   getEmployees,
@@ -73,7 +75,11 @@ import {
   getRegulatoryDocuments,
   createRegulatoryDocument,
   updateRegulatoryDocument,
-  deleteRegulatoryDocument
+  deleteRegulatoryDocument,
+  getFixedBills,
+  createFixedBill,
+  updateFixedBill,
+  deleteFixedBill
 } from './services/supabase';
 
 export default function App() {
@@ -96,8 +102,9 @@ export default function App() {
   const [uniformDiscards, setUniformDiscards] = useState<UniformDiscard[]>([]);
   const [uniformSummary, setUniformSummary] = useState<UniformSummary | null>(null);
 
-  // Borderô Semanal State
+  // Borderô Semanal & Contas Fixas State
   const [borderos, setBorderos] = useState<BorderoWeekly[]>([]);
+  const [fixedBills, setFixedBills] = useState<FixedBill[]>([]);
 
   // Alvarás & Licenças State
   const [regulatoryDocs, setRegulatoryDocs] = useState<RegulatoryDocument[]>([]);
@@ -177,8 +184,20 @@ export default function App() {
           break;
         }
         case 'borderos': {
-          const res = await getBorderos();
-          setBorderos(res);
+          const [resBord, resFixed] = await Promise.all([getBorderos(), getFixedBills()]);
+          setBorderos(resBord);
+          setFixedBills(resFixed);
+          break;
+        }
+        case 'fixed_bills': {
+          const [resFixed, resBord, resDash] = await Promise.all([
+            getFixedBills(),
+            getBorderos(),
+            getOperationalDashboardSummary()
+          ]);
+          setFixedBills(resFixed);
+          setBorderos(resBord);
+          setOperationalSummary(resDash);
           break;
         }
         case 'regulatory': {
@@ -205,6 +224,7 @@ export default function App() {
     getRegulatoryDocuments().then(setRegulatoryDocs).catch(() => {});
     getSettings().then(setSettings).catch(() => {});
     getBorderos().then(setBorderos).catch(() => {});
+    getFixedBills().then(setFixedBills).catch(() => {});
 
     // Polling a cada 15 segundos para manter os dados atualizados entre múltiplos usuários
     const interval = setInterval(() => {
@@ -623,6 +643,54 @@ export default function App() {
     }
   };
 
+  // --- HANDLERS: CONTAS FIXAS & RECORRENTES (PADRÃO EVO) ---
+  const handleAddFixedBill = async (bill: Partial<FixedBill>) => {
+    try {
+      const created = await createFixedBill(bill);
+      setFixedBills(prev => [...prev, created].sort((a, b) => a.dueDay - b.dueDay));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao cadastrar conta fixa');
+    }
+  };
+
+  const handleUpdateFixedBill = async (id: string, bill: Partial<FixedBill>) => {
+    try {
+      await updateFixedBill(id, bill);
+      setFixedBills(prev => prev.map(b => b.id === id ? { ...b, ...bill } : b).sort((a, b) => a.dueDay - b.dueDay));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao atualizar conta fixa');
+    }
+  };
+
+  const handleDeleteFixedBill = async (id: string) => {
+    try {
+      await deleteFixedBill(id);
+      setFixedBills(prev => prev.filter(b => b.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao excluir conta fixa');
+    }
+  };
+
+  const handleLaunchFixedBillToBordero = async (borderoId: string, bill: FixedBill, customAmount?: number, customDueDate?: string) => {
+    const amount = customAmount !== undefined ? customAmount : Number(bill.defaultAmount) || 0;
+    const now = new Date();
+    const fallbackDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(bill.dueDay).padStart(2, '0')}`;
+    await handleAddBorderoItem(borderoId, {
+      recipient: bill.recipient,
+      description: `${bill.description || bill.recipient} (${bill.evoCostCenter})`,
+      dueDate: customDueDate || fallbackDate,
+      amount,
+      billType: bill.billType,
+      notes: bill.notes || `Importado de Contas Fixas EVO (${bill.paymentMethod})`,
+      status: 'PENDENTE'
+    });
+  };
+
+  const activeFixedBillsCount = fixedBills.filter(b => b.active).length;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Header
@@ -632,6 +700,7 @@ export default function App() {
         expiringRegulatoryCount={expiringRegulatoryCount}
         pendingTasksCount={pendingTasksCount}
         lowStockCleaningCount={lowStockCleaningCount}
+        activeFixedBillsCount={activeFixedBillsCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6">
@@ -721,6 +790,7 @@ export default function App() {
         {activeTab === 'borderos' && (
           <BorderoView
             borderos={borderos}
+            fixedBills={fixedBills}
             ownerPhone={settings?.whatsappOwnerPhone}
             managerPhone={settings?.whatsappManagerPhone}
             onUpdatePhoneSettings={handleUpdatePhoneSettings}
@@ -731,10 +801,25 @@ export default function App() {
             onUpdateItem={handleUpdateBorderoItem}
             onDeleteItem={handleDeleteBorderoItem}
             onToggleStatus={handleToggleBorderoStatus}
+            onNavigateTab={setActiveTab}
           />
         )}
 
-        {/* 8. Configurações & Backup */}
+        {/* 8. Contas Fixas & Recorrentes (Padrão EVO) */}
+        {activeTab === 'fixed_bills' && (
+          <FixedBillsView
+            fixedBills={fixedBills}
+            borderos={borderos}
+            coletivasSummary={operationalSummary?.coletivasSummary}
+            onAddFixedBill={handleAddFixedBill}
+            onUpdateFixedBill={handleUpdateFixedBill}
+            onDeleteFixedBill={handleDeleteFixedBill}
+            onLaunchToBordero={handleLaunchFixedBillToBordero}
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
+        {/* 9. Configurações & Backup */}
         {activeTab === 'settings' && (
           <SyncSettingsView
             settings={settings || ({ id: 'default', excelFilePath: '', syncIntervalSeconds: 0, autoSyncEnabled: false, lastSyncedAt: null, columnMapping: {} as any })}
