@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Employee, EmployeeDocument } from '../shared/types';
 import { formatDate } from '../shared/formatters';
+import { getEmployeeDocumentFileUrl } from '../services/supabase';
 
 interface EmployeeViewProps {
   employees: Employee[];
@@ -76,18 +77,31 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
     }
   };
 
-  const handleOpenPreview = (doc: EmployeeDocument) => {
+  const resolveEmpDocUrl = async (docId: string | undefined, currentUrl: string): Promise<string> => {
+    if (currentUrl && currentUrl !== '__LAZY_LOAD__') return currentUrl;
+    if (!docId) return '';
+    return await getEmployeeDocumentFileUrl(docId);
+  };
+
+  const handleOpenPreview = async (doc: EmployeeDocument) => {
     if (!doc.fileDataUrl) return;
+    const resolvedUrl = await resolveEmpDocUrl(doc.id, doc.fileDataUrl);
+    if (!resolvedUrl) {
+      alert('Não foi possível carregar o arquivo anexo.');
+      return;
+    }
     setPreviewDoc({
       title: doc.title,
       fileName: doc.fileName,
-      fileDataUrl: doc.fileDataUrl
+      fileDataUrl: resolvedUrl
     });
   };
 
-  const handleDownloadDocument = (fileDataUrl: string, fileName: string) => {
+  const handleDownloadDocument = async (fileDataUrl: string, fileName: string, docId?: string) => {
     try {
-      const blobUrl = getBlobUrl(fileDataUrl);
+      const resolvedUrl = await resolveEmpDocUrl(docId, fileDataUrl);
+      if (!resolvedUrl) return;
+      const blobUrl = getBlobUrl(resolvedUrl);
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName || 'documento.pdf';
@@ -1198,7 +1212,7 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDownloadDocument(doc.fileDataUrl, doc.fileName)}
+                                onClick={() => handleDownloadDocument(doc.fileDataUrl, doc.fileName, doc.id)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold rounded-lg transition border border-indigo-500/30 cursor-pointer"
                               >
                                 <Download className="w-3.5 h-3.5" />

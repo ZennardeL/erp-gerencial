@@ -149,7 +149,7 @@ export default function App() {
           break;
         }
         case 'tasks': {
-          const [resTasks, resEmps] = await Promise.all([getTasks(), getEmployees()]);
+          const [resTasks, resEmps] = await Promise.all([getTasks(), getEmployees(false)]);
           setTasks(resTasks);
           setEmployees(resEmps);
           break;
@@ -216,20 +216,26 @@ export default function App() {
     }
   };
 
+  // Carregamento inicial único de metadados leves para badges da barra lateral
   useEffect(() => {
-    fetchForTab(activeTab);
-    getEmployees().then(setEmployees).catch(() => {});
+    getEmployees(false).then(setEmployees).catch(() => {});
     getTasks().then(setTasks).catch(() => {});
     getCleaningProducts().then(setCleaningProducts).catch(() => {});
     getRegulatoryDocuments().then(setRegulatoryDocs).catch(() => {});
     getSettings().then(setSettings).catch(() => {});
     getBorderos().then(setBorderos).catch(() => {});
     getFixedBills().then(setFixedBills).catch(() => {});
+  }, []);
 
-    // Polling a cada 15 segundos para manter os dados atualizados entre múltiplos usuários
+  // Carregamento seletivo da aba ativa + polling inteligente (3 min e apenas com aba visível)
+  useEffect(() => {
+    fetchForTab(activeTab);
+
     const interval = setInterval(() => {
-      fetchForTab(activeTab);
-    }, 15000);
+      if (document.visibilityState === 'visible') {
+        fetchForTab(activeTab);
+      }
+    }, 180000);
 
     return () => clearInterval(interval);
   }, [activeTab]);

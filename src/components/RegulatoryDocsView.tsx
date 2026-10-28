@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { RegulatoryDocument, RegulatoryCategory, RegulatoryStatus } from '../shared/types';
 import { formatDate } from '../shared/formatters';
+import { getRegulatoryDocumentFileUrl } from '../services/supabase';
 
 interface RegulatoryDocsViewProps {
   documents: RegulatoryDocument[];
@@ -393,6 +394,34 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
     }
   };
 
+  const resolveFileDataUrl = async (docId: string | undefined, currentUrl: string): Promise<string> => {
+    if (currentUrl && currentUrl !== '__LAZY_LOAD__') return currentUrl;
+    if (!docId) return '';
+    return await getRegulatoryDocumentFileUrl(docId);
+  };
+
+  const handleOpenPreviewLazy = async (docId: string | undefined, title: string, fileName: string, currentUrl: string) => {
+    const resolvedUrl = await resolveFileDataUrl(docId, currentUrl);
+    if (!resolvedUrl) {
+      alert('Não foi possível carregar o arquivo anexo.');
+      return;
+    }
+    setPreviewDoc({
+      title,
+      fileName: fileName || 'documento.pdf',
+      fileDataUrl: resolvedUrl
+    });
+  };
+
+  const handleDownloadLazy = async (docId: string | undefined, currentUrl: string, fileName: string) => {
+    const resolvedUrl = await resolveFileDataUrl(docId, currentUrl);
+    if (!resolvedUrl) {
+      alert('Não foi possível baixar o arquivo anexo.');
+      return;
+    }
+    handleDownload(resolvedUrl, fileName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Header */}
@@ -752,18 +781,14 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
 
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
-                          onClick={() => setPreviewDoc({
-                            title: doc.title,
-                            fileName: doc.fileName || 'documento.pdf',
-                            fileDataUrl: doc.fileDataUrl!
-                          })}
+                          onClick={() => handleOpenPreviewLazy(doc.id, doc.title, doc.fileName || 'documento.pdf', doc.fileDataUrl!)}
                           className="p-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-200 transition"
                           title="Visualizar documento"
                         >
                           <Eye className="w-3.5 h-3.5 text-amber-300" />
                         </button>
                         <button
-                          onClick={() => handleDownload(doc.fileDataUrl!, doc.fileName || `${doc.title}.pdf`)}
+                          onClick={() => handleDownloadLazy(doc.id, doc.fileDataUrl!, doc.fileName || `${doc.title}.pdf`)}
                           className="p-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-200 transition"
                           title="Baixar cópia digital"
                         >
@@ -1078,11 +1103,7 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setPreviewDoc({
-                          title: form.title || 'Documento',
-                          fileName: form.fileName,
-                          fileDataUrl: form.fileDataUrl
-                        })}
+                        onClick={() => handleOpenPreviewLazy(editingDoc?.id, form.title || 'Documento', form.fileName, form.fileDataUrl)}
                         className="px-2.5 py-1 rounded-lg bg-slate-700 text-amber-300 text-xs font-semibold hover:bg-slate-600 transition"
                       >
                         Visualizar

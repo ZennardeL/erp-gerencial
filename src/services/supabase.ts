@@ -26,11 +26,18 @@ const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'e
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Cache em memória de sessão para evitar baixar o mesmo PDF/imagem Base64 mais de uma vez
+const docFileCache: Record<string, string> = {};
+
 // --- 1. EMPLOYEES & DOCUMENTS ---
-export async function getEmployees(): Promise<Employee[]> {
+export async function getEmployees(includeAvatars: boolean = true): Promise<Employee[]> {
+  const empColumns = includeAvatars
+    ? '*'
+    : 'id, name, role, cpf, rg, cref_number, phone, email, admission_date, status, notes, created_at, updated_at';
+
   const { data: emps, error: empErr } = await supabase
     .from('erp_employees')
-    .select('*')
+    .select(empColumns)
     .order('name', { ascending: true });
 
   if (empErr) {
@@ -38,15 +45,16 @@ export async function getEmployees(): Promise<Employee[]> {
     return [];
   }
 
+  // OTIMIZAÇÃO DE EGRESS: Busca apenas metadados leves (~1 KB) sem a coluna pesada file_data_url (~2.1 MB)
   const { data: docs, error: docErr } = await supabase
     .from('erp_employee_documents')
-    .select('*')
+    .select('id, employee_id, doc_type, title, file_name, file_size_formatted, issue_date, expiration_date, notes, created_at')
     .order('created_at', { ascending: false });
 
   if (docErr) console.error('Erro ao buscar documentos:', docErr);
 
   const docsByEmp: Record<string, EmployeeDocument[]> = {};
-  (docs || []).forEach(d => {
+  (docs || []).forEach((d: any) => {
     if (!docsByEmp[d.employee_id]) docsByEmp[d.employee_id] = [];
     docsByEmp[d.employee_id].push({
       id: d.id,
@@ -54,7 +62,7 @@ export async function getEmployees(): Promise<Employee[]> {
       docType: d.doc_type,
       title: d.title,
       fileName: d.file_name,
-      fileDataUrl: d.file_data_url || '',
+      fileDataUrl: docFileCache[d.id] || (d.file_name ? '__LAZY_LOAD__' : ''),
       fileSizeFormatted: d.file_size_formatted || '',
       issueDate: d.issue_date || '',
       expirationDate: d.expiration_date || null,
@@ -63,7 +71,7 @@ export async function getEmployees(): Promise<Employee[]> {
     });
   });
 
-  return (emps || []).map(e => ({
+  return (emps || []).map((e: any) => ({
     id: e.id,
     name: e.name,
     role: e.role,
@@ -80,6 +88,22 @@ export async function getEmployees(): Promise<Employee[]> {
     createdAt: e.created_at,
     updatedAt: e.updated_at
   }));
+}
+
+export async function getEmployeeDocumentFileUrl(docId: string): Promise<string> {
+  if (docFileCache[docId]) return docFileCache[docId];
+  const { data, error } = await supabase
+    .from('erp_employee_documents')
+    .select('file_data_url')
+    .eq('id', docId)
+    .single();
+  if (error) {
+    console.error('Erro ao carregar arquivo do documento do colaborador:', error);
+    return '';
+  }
+  const url = data?.file_data_url || '';
+  if (url) docFileCache[docId] = url;
+  return url;
 }
 
 export async function createEmployee(data: Partial<Employee>): Promise<Employee> {
@@ -751,7 +775,7 @@ export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
 // --- 6. OPERATIONAL DASHBOARD SUMMARY ---
 export async function getOperationalDashboardSummary(): Promise<OperationalDashboardSummary> {
   const [employees, tasks, cleaning, maintenance, uniforms, coletivasSummary, pdvSummary, fixedBills] = await Promise.all([
-    getEmployees(),
+    getEmployees(false),
     getTasks(),
     getCleaningProducts(),
     getMaintenanceRecords(),
@@ -1056,9 +1080,10 @@ export async function uploadBorderoPdf(fileName: string, pdfBlob: Blob): Promise
 
 // --- 8. REGULATORY DOCUMENTS (AVCB, ALVARÁ, DEDETIZAÇÃO, ETC.) ---
 export async function getRegulatoryDocuments(): Promise<RegulatoryDocument[]> {
+  // OTIMIZAÇÃO DE EGRESS: Busca apenas metadados leves (~1 KB) sem a coluna pesada file_data_url (~4.91 MB)
   const { data, error } = await supabase
     .from('erp_regulatory_documents')
-    .select('*')
+    .select('id, title, category, document_number, issuing_body, issue_date, expiration_date, status, file_name, file_size_formatted, notes, created_at, updated_at')
     .order('expiration_date', { ascending: true, nullsFirst: false });
 
   if (error) {
@@ -1066,7 +1091,7 @@ export async function getRegulatoryDocuments(): Promise<RegulatoryDocument[]> {
     return [];
   }
 
-  return (data || []).map(d => ({
+  return (data || []).map((d: any) => ({
     id: d.id,
     title: d.title,
     category: d.category,
@@ -1076,12 +1101,28 @@ export async function getRegulatoryDocuments(): Promise<RegulatoryDocument[]> {
     expirationDate: d.expiration_date || null,
     status: d.status || 'REGULAR',
     fileName: d.file_name || '',
-    fileDataUrl: d.file_data_url || '',
+    fileDataUrl: docFileCache[d.id] || (d.file_name ? '__LAZY_LOAD__' : ''),
     fileSizeFormatted: d.file_size_formatted || '',
     notes: d.notes || '',
     createdAt: d.created_at,
     updatedAt: d.updated_at
   }));
+}
+
+export async function getRegulatoryDocumentFileUrl(docId: string): Promise<string> {
+  if (docFileCache[docId]) return docFileCache[docId];
+  const { data, error } = await supabase
+    .from('erp_regulatory_documents')
+    .select('file_data_url')
+    .eq('id', docId)
+    .single();
+  if (error) {
+    console.error('Erro ao carregar arquivo do documento regulatório:', error);
+    return '';
+  }
+  const url = data?.file_data_url || '';
+  if (url) docFileCache[docId] = url;
+  return url;
 }
 
 export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>): Promise<RegulatoryDocument> {
@@ -1096,7 +1137,7 @@ export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>)
     expiration_date: doc.expirationDate || null,
     status: doc.status || 'REGULAR',
     file_name: doc.fileName || null,
-    file_data_url: doc.fileDataUrl || null,
+    file_data_url: doc.fileDataUrl && doc.fileDataUrl !== '__LAZY_LOAD__' ? doc.fileDataUrl : null,
     file_size_formatted: doc.fileSizeFormatted || null,
     notes: doc.notes || null,
     created_at: new Date().toISOString(),
@@ -1105,6 +1146,8 @@ export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>)
 
   const { error } = await supabase.from('erp_regulatory_documents').insert([record]);
   if (error) throw error;
+
+  if (record.file_data_url) docFileCache[id] = record.file_data_url;
 
   return {
     id,
@@ -1134,7 +1177,11 @@ export async function updateRegulatoryDocument(id: string, doc: Partial<Regulato
   if (doc.expirationDate !== undefined) updateData.expiration_date = doc.expirationDate;
   if (doc.status !== undefined) updateData.status = doc.status;
   if (doc.fileName !== undefined) updateData.file_name = doc.fileName;
-  if (doc.fileDataUrl !== undefined) updateData.file_data_url = doc.fileDataUrl;
+  if (doc.fileDataUrl !== undefined && doc.fileDataUrl !== '__LAZY_LOAD__') {
+    updateData.file_data_url = doc.fileDataUrl;
+    if (doc.fileDataUrl) docFileCache[id] = doc.fileDataUrl;
+    else delete docFileCache[id];
+  }
   if (doc.fileSizeFormatted !== undefined) updateData.file_size_formatted = doc.fileSizeFormatted;
   if (doc.notes !== undefined) updateData.notes = doc.notes;
 
