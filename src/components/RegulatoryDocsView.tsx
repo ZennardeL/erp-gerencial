@@ -380,9 +380,16 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
     }
   };
 
-  const handleDownload = (fileDataUrl: string, fileName: string) => {
+  const handleDownload = async (fileDataUrl: string, fileName: string) => {
     try {
-      const blobUrl = getBlobUrl(fileDataUrl);
+      let blobUrl = fileDataUrl;
+      if (fileDataUrl.startsWith('http://') || fileDataUrl.startsWith('https://')) {
+        const res = await fetch(fileDataUrl);
+        const blob = await res.blob();
+        blobUrl = URL.createObjectURL(blob);
+      } else {
+        blobUrl = getBlobUrl(fileDataUrl);
+      }
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName || 'documento-regulatorio.pdf';
@@ -391,6 +398,7 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
       document.body.removeChild(link);
     } catch (e) {
       console.error('Erro ao baixar documento:', e);
+      window.open(fileDataUrl, '_blank');
     }
   };
 
@@ -1212,17 +1220,17 @@ export const RegulatoryDocsView: React.FC<RegulatoryDocsViewProps> = ({
 
             {/* Viewer Body */}
             <div className="flex-1 bg-slate-950 p-2 sm:p-4 overflow-auto flex items-center justify-center">
-              {previewDoc.fileDataUrl.startsWith('data:image/') ? (
+              {previewDoc.fileDataUrl.startsWith('data:image/') || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(previewDoc.fileDataUrl) ? (
                 <img
                   src={previewDoc.fileDataUrl}
                   alt={previewDoc.title}
                   className="max-h-full max-w-full object-contain rounded-lg shadow-lg"
                 />
-              ) : previewDoc.fileDataUrl.startsWith('data:application/pdf') || previewDoc.fileDataUrl.startsWith('blob:') ? (
+              ) : previewDoc.fileDataUrl.startsWith('data:application/pdf') || previewDoc.fileDataUrl.startsWith('blob:') || previewDoc.fileDataUrl.startsWith('http') ? (
                 <iframe
                   src={getBlobUrl(previewDoc.fileDataUrl)}
                   title={previewDoc.title}
-                  className="w-full h-full rounded-lg border border-slate-800"
+                  className="w-full h-full rounded-lg border border-slate-800 bg-white"
                 />
               ) : (
                 <div className="text-center p-8">

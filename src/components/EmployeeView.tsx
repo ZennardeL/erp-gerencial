@@ -101,7 +101,14 @@ export const EmployeeView: React.FC<EmployeeViewProps> = ({
     try {
       const resolvedUrl = await resolveEmpDocUrl(docId, fileDataUrl);
       if (!resolvedUrl) return;
-      const blobUrl = getBlobUrl(resolvedUrl);
+      let blobUrl = resolvedUrl;
+      if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
+        const res = await fetch(resolvedUrl);
+        const blob = await res.blob();
+        blobUrl = URL.createObjectURL(blob);
+      } else {
+        blobUrl = getBlobUrl(resolvedUrl);
+      }
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName || 'documento.pdf';

@@ -714,6 +714,9 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardView 
             summary={operationalSummary} 
+            fixedBills={fixedBills}
+            borderos={borderos}
+            ownerPhone={settings?.whatsappOwnerPhone}
             onNavigateTab={setActiveTab}
             onRefresh={() => fetchForTab('dashboard')} 
           />

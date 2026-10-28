@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Users, 
   CheckSquare, 
@@ -16,22 +16,42 @@ import {
   ShoppingCart,
   CalendarClock,
   ExternalLink,
-  Receipt
+  Receipt,
+  MessageCircle,
+  Copy,
+  Check,
+  Send,
+  X
 } from 'lucide-react';
-import { OperationalDashboardSummary } from '../shared/types';
+import { OperationalDashboardSummary, FixedBill, BorderoWeekly } from '../shared/types';
 import { formatCurrency } from '../shared/formatters';
 
 interface DashboardViewProps {
   summary: OperationalDashboardSummary | null;
+  fixedBills?: FixedBill[];
+  borderos?: BorderoWeekly[];
+  ownerPhone?: string;
   onNavigateTab: (tab: string) => void;
   onRefresh: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ 
   summary, 
+  fixedBills = [],
+  borderos = [],
+  ownerPhone,
   onNavigateTab, 
   onRefresh 
 }) => {
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+  const [waSections, setWaSections] = useState({
+    contasFixas: true,
+    pdvRecepcao: true,
+    coletivas: true,
+    operacional: true
+  });
+
   if (!summary) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-400">
@@ -42,6 +62,132 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }
 
   const { kpis, expiringDocumentsList, recentMaintenance, urgentTasks, criticalCleaningProducts, coletivasSummary, pdvSummary, fixedBillsSummary } = summary;
+
+  // Geração automática do Resumo Executivo para WhatsApp do Patrão
+  const whatsappReportText = useMemo(() => {
+    const now = new Date();
+    const todayDay = now.getDate();
+    const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), todayDay + 1);
+    const tomorrowDay = tomorrowDate.getDate();
+    const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const lines: string[] = [];
+    lines.push(`📊 *RESUMO EXECUTIVO DIÁRIO — PANOBIANCO BOITUVA*`);
+    lines.push(`📅 _${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} às ${timeStr}_`);
+    lines.push(`━━━━━━━━━━━━━━━━━━━━`);
+
+    // 1. Contas Fixas & Vencimentos (Calendário do Patrão)
+    if (waSections.contasFixas) {
+      const activeBills = fixedBills.filter(b => b.active !== false);
+      const billsToday = activeBills.filter(b => b.dueDay === todayDay);
+      const billsTomorrow = activeBills.filter(b => b.dueDay === tomorrowDay);
+      const billsNext5Days = activeBills.filter(b => {
+        if (b.dueDay === todayDay || b.dueDay === tomorrowDay) return false;
+        const diff = b.dueDay - todayDay;
+        return diff > 1 && diff <= 5;
+      });
+
+      lines.push(`\n🏦 *1. CONTAS FIXAS & VENCIMENTOS*`);
+      if (billsToday.length > 0) {
+        const totalToday = billsToday.reduce((acc, b) => acc + (Number(b.defaultAmount) || 0), 0);
+        lines.push(`🚨 *VENCEM HOJE (Dia ${String(todayDay).padStart(2, '0')}) — Total: ${formatCurrency(totalToday)}*`);
+        billsToday.forEach(b => {
+          const amt = b.defaultAmount > 0 ? formatCurrency(b.defaultAmount) : 'Valor variável';
+          lines.push(`  • ${b.recipient}: *${amt}* (${b.paymentMethod})`);
+        });
+      } else {
+        lines.push(`✅ *Hoje (Dia ${String(todayDay).padStart(2, '0')}):* Nenhuma conta fixa vencendo hoje.`);
+      }
+
+      if (billsTomorrow.length > 0) {
+        const totalTom = billsTomorrow.reduce((acc, b) => acc + (Number(b.defaultAmount) || 0), 0);
+        lines.push(`⚠️ *Vencem Amanhã (Dia ${String(tomorrowDay).padStart(2, '0')}) — Total: ${formatCurrency(totalTom)}:*`);
+        billsTomorrow.forEach(b => {
+          const amt = b.defaultAmount > 0 ? formatCurrency(b.defaultAmount) : 'Valor variável';
+          lines.push(`  • ${b.recipient}: *${amt}*`);
+        });
+      }
+
+      if (billsNext5Days.length > 0) {
+        lines.push(`📆 *Próximos 5 dias:*`);
+        billsNext5Days.forEach(b => {
+          const amt = b.defaultAmount > 0 ? formatCurrency(b.defaultAmount) : 'Variável';
+          lines.push(`  • Dia ${String(b.dueDay).padStart(2, '0')} — ${b.recipient}: ${amt}`);
+        });
+      }
+
+      if (fixedBillsSummary) {
+        lines.push(`📌 _Previsão Fixa Mensal Total: ${formatCurrency(fixedBillsSummary.totalActiveMonthly)}_`);
+      }
+    }
+
+    // 2. PDV Recepção & Vales
+    if (waSections.pdvRecepcao && pdvSummary) {
+      lines.push(`\n🛒 *2. PDV RECEPÇÃO & CAIXA*`);
+      lines.push(`💰 *Vendas Hoje:* ${formatCurrency(pdvSummary.revenueToday)} (${pdvSummary.salesCountToday} vendas)`);
+      if (pdvSummary.activeShiftOperator) {
+        lines.push(`👤 *Turno Aberto:* ${pdvSummary.activeShiftOperator}`);
+      }
+      lines.push(`📈 *Acumulado Mês:* ${formatCurrency(pdvSummary.revenueMonth)} (Lucro est.: ${formatCurrency(pdvSummary.profitMonth)})`);
+      
+      if (pdvSummary.pendingValesCount > 0) {
+        lines.push(`🧾 *Vales Pendentes (Equipe):* ${formatCurrency(pdvSummary.pendingValesAmount)} (${pdvSummary.pendingValesCount} itens)`);
+        pdvSummary.pendingValesByPerson.slice(0, 4).forEach(v => {
+          lines.push(`  • ${v.beneficiaryName}: ${formatCurrency(v.totalAmount)} (${v.count}x)`);
+        });
+      }
+      if (pdvSummary.outOfStockProductsCount > 0 || pdvSummary.lowStockProductsCount > 0) {
+        lines.push(`📦 *Alerta Estoque PDV:* ${pdvSummary.outOfStockProductsCount} esgotado(s) e ${pdvSummary.lowStockProductsCount} em nível crítico`);
+      }
+    }
+
+    // 3. Aulas Coletivas
+    if (waSections.coletivas && coletivasSummary) {
+      lines.push(`\n🏋️ *3. AULAS COLETIVAS (${coletivasSummary.monthRef})*`);
+      lines.push(`👥 *Alunos Atendidos no Mês:* ${coletivasSummary.totalStudentsMonth} presenças em ${coletivasSummary.totalClassesMonth} aulas`);
+      lines.push(`📊 *Média por Aula:* ${coletivasSummary.avgStudentsPerClass.toFixed(1)} alunos/turma`);
+      if (coletivasSummary.topModality && coletivasSummary.topModality !== '—') {
+        lines.push(`🏆 *Modalidade Mais Popular:* ${coletivasSummary.topModality} (média ${coletivasSummary.topModalityAvg.toFixed(1)} alunos)`);
+      }
+      lines.push(`💵 *Folha Coletivas Parcial:* ${formatCurrency(coletivasSummary.totalPayrollMonth)} (Holerite: ${formatCurrency(coletivasSummary.totalHoleriteMonth)} | Recibo: ${formatCurrency(coletivasSummary.totalReciboMonth)})`);
+    }
+
+    // 4. Operação, Manutenção & Conformidade
+    if (waSections.operacional) {
+      lines.push(`\n🛠️ *4. OPERAÇÃO, LIMPEZA & MANUTENÇÃO*`);
+      lines.push(`✅ *Checklist Diário:* ${kpis.completedTasksCount}/${kpis.totalTasks} concluídas (${kpis.pendingTasksCount} pendentes)`);
+      lines.push(`🔧 *Manutenção no Mês:* ${formatCurrency(kpis.maintenanceCostMonth)} (${kpis.totalMaintenanceCount} ocorrências)`);
+      if (kpis.lowStockCleaningCount > 0) {
+        lines.push(`🧴 *Limpeza Crítica (${kpis.lowStockCleaningCount} itens):* ${criticalCleaningProducts.slice(0, 4).map(p => `${p.name} (${p.currentQuantity} ${p.unit})`).join(', ')}`);
+      } else {
+        lines.push(`🧴 *Estoque de Limpeza:* 100% abastecido`);
+      }
+      if (kpis.expiringDocsCount > 0) {
+        lines.push(`⚠️ *CREF / Documentos:* ${kpis.expiringDocsCount} documento(s) próximo(s) do vencimento`);
+      }
+    }
+
+    lines.push(`\n━━━━━━━━━━━━━━━━━━━━`);
+    lines.push(`_Gerado automaticamente pelo ERP Gerencial Panobianco_`);
+
+    return lines.join('\n');
+  }, [summary, fixedBills, borderos, waSections]);
+
+  const handleCopyWhatsApp = () => {
+    navigator.clipboard.writeText(whatsappReportText);
+    setCopiedWhatsApp(true);
+    setTimeout(() => setCopiedWhatsApp(false), 2500);
+  };
+
+  const handleSendWhatsApp = () => {
+    const cleanPhone = (ownerPhone || '').replace(/\D/g, '');
+    const encoded = encodeURIComponent(whatsappReportText);
+    const url = cleanPhone
+      ? `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : '55' + cleanPhone}?text=${encoded}`
+      : `https://wa.me/?text=${encoded}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="space-y-6">
@@ -58,6 +204,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setShowWhatsAppModal(true)}
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shadow-md shadow-emerald-600/20 flex-1 sm:flex-initial cursor-pointer"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            📲 Resumo do Dia (WhatsApp Patrão)
+          </button>
           <button
             onClick={() => onNavigateTab('fixed_bills')}
             className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shadow-md shadow-indigo-600/20 flex-1 sm:flex-initial cursor-pointer"
@@ -637,6 +790,108 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Modal: Resumo do Dia para WhatsApp do Patrão */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Resumo Executivo do Dia p/ WhatsApp</h3>
+                  <p className="text-xs text-slate-400">
+                    Relatório consolidado (Contas do Dia, PDV, Vales, Coletivas e Operação) pronto para o Patrão
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWhatsAppModal(false)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4">
+              {/* Filtros de Seções */}
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                  Seções incluídas no relatório:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { key: 'contasFixas', label: '🏦 Contas & Dia' },
+                    { key: 'pdvRecepcao', label: '🛒 PDV & Vales' },
+                    { key: 'coletivas', label: '🏋️ Coletivas' },
+                    { key: 'operacional', label: '🛠️ Operação' }
+                  ].map(sec => {
+                    const active = (waSections as any)[sec.key];
+                    return (
+                      <button
+                        key={sec.key}
+                        type="button"
+                        onClick={() => setWaSections(prev => ({ ...prev, [sec.key]: !active }))}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-between cursor-pointer ${
+                          active
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                            : 'bg-slate-950 border-slate-800 text-slate-500'
+                        }`}
+                      >
+                        <span>{sec.label}</span>
+                        {active && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Preview do Texto Formatado */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Prévia da Mensagem (Formatada para WhatsApp):
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {whatsappReportText.length} caracteres
+                  </span>
+                </div>
+                <pre className="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                  {whatsappReportText}
+                </pre>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowWhatsAppModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Fechar
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyWhatsApp}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md cursor-pointer"
+              >
+                {copiedWhatsApp ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedWhatsApp ? 'Texto Copiado!' : '📋 Copiar Resumo'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSendWhatsApp}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/20 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                📲 Enviar no WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

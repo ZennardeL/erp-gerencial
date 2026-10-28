@@ -29,6 +29,57 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Cache em memória de sessão para evitar baixar o mesmo PDF/imagem Base64 mais de uma vez
 const docFileCache: Record<string, string> = {};
 
+// Converte data URL Base64 em Blob e envia para o bucket público 'erp-documents' do Supabase Storage
+export async function uploadDocumentToStorage(
+  folder: 'regulatory' | 'employees',
+  docId: string,
+  fileName: string,
+  fileDataUrl?: string | null
+): Promise<string | null> {
+  if (!fileDataUrl || fileDataUrl === '__LAZY_LOAD__') return null;
+  if (!fileDataUrl.startsWith('data:')) return fileDataUrl;
+
+  try {
+    const match = fileDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return fileDataUrl;
+    const mimeType = match[1];
+    const bstr = atob(match[2]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const blob = new Blob([u8arr], { type: mimeType });
+    const cleanName = (fileName || 'documento.pdf')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `${folder}/${docId}_${cleanName}`;
+
+    const { error } = await supabase.storage
+      .from('erp-documents')
+      .upload(storagePath, blob, {
+        contentType: mimeType,
+        cacheControl: '31536000',
+        upsert: true
+      });
+
+    if (error) {
+      console.warn('Aviso ao enviar documento ao Storage (usando fallback):', error);
+      return fileDataUrl;
+    }
+
+    const { data: pubData } = supabase.storage
+      .from('erp-documents')
+      .getPublicUrl(storagePath);
+
+    return pubData?.publicUrl || fileDataUrl;
+  } catch (err) {
+    console.warn('Exceção ao converter/enviar documento para Storage:', err);
+    return fileDataUrl;
+  }
+}
+
 // --- 1. EMPLOYEES & DOCUMENTS ---
 export async function getEmployees(includeAvatars: boolean = true): Promise<Employee[]> {
   const empColumns = includeAvatars
@@ -167,13 +218,14 @@ export async function deleteEmployee(id: string): Promise<void> {
 
 export async function addEmployeeDocument(employeeId: string, doc: Partial<EmployeeDocument>): Promise<EmployeeDocument> {
   const id = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const storageUrl = await uploadDocumentToStorage('employees', id, doc.fileName || 'documento.pdf', doc.fileDataUrl);
   const record = {
     id,
     employee_id: employeeId,
     doc_type: doc.docType || 'OUTRO',
     title: doc.title || 'Documento',
     file_name: doc.fileName || 'documento.pdf',
-    file_data_url: doc.fileDataUrl || null,
+    file_data_url: storageUrl,
     file_size_formatted: doc.fileSizeFormatted || null,
     issue_date: doc.issueDate || null,
     expiration_date: doc.expirationDate || null,
@@ -182,6 +234,8 @@ export async function addEmployeeDocument(employeeId: string, doc: Partial<Emplo
 
   const { error } = await supabase.from('erp_employee_documents').insert([record]);
   if (error) throw error;
+
+  if (storageUrl) docFileCache[id] = storageUrl;
 
   return {
     id,
@@ -1127,6 +1181,7 @@ export async function getRegulatoryDocumentFileUrl(docId: string): Promise<strin
 
 export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>): Promise<RegulatoryDocument> {
   const id = `reg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const storageUrl = await uploadDocumentToStorage('regulatory', id, doc.fileName || 'documento.pdf', doc.fileDataUrl);
   const record = {
     id,
     title: doc.title || 'Novo Documento Regulatório',
@@ -1137,7 +1192,7 @@ export async function createRegulatoryDocument(doc: Partial<RegulatoryDocument>)
     expiration_date: doc.expirationDate || null,
     status: doc.status || 'REGULAR',
     file_name: doc.fileName || null,
-    file_data_url: doc.fileDataUrl && doc.fileDataUrl !== '__LAZY_LOAD__' ? doc.fileDataUrl : null,
+    file_data_url: storageUrl,
     file_size_formatted: doc.fileSizeFormatted || null,
     notes: doc.notes || null,
     created_at: new Date().toISOString(),
@@ -1178,8 +1233,11 @@ export async function updateRegulatoryDocument(id: string, doc: Partial<Regulato
   if (doc.status !== undefined) updateData.status = doc.status;
   if (doc.fileName !== undefined) updateData.file_name = doc.fileName;
   if (doc.fileDataUrl !== undefined && doc.fileDataUrl !== '__LAZY_LOAD__') {
-    updateData.file_data_url = doc.fileDataUrl;
-    if (doc.fileDataUrl) docFileCache[id] = doc.fileDataUrl;
+    const storageUrl = doc.fileDataUrl
+      ? await uploadDocumentToStorage('regulatory', id, doc.fileName || 'documento.pdf', doc.fileDataUrl)
+      : null;
+    updateData.file_data_url = storageUrl;
+    if (storageUrl) docFileCache[id] = storageUrl;
     else delete docFileCache[id];
   }
   if (doc.fileSizeFormatted !== undefined) updateData.file_size_formatted = doc.fileSizeFormatted;
