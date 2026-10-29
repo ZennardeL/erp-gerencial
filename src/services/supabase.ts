@@ -602,11 +602,15 @@ export async function deleteUniformDiscard(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getUniformSummary(): Promise<UniformSummary> {
+export async function getUniformSummary(existing?: {
+  items?: UniformItem[];
+  deliveries?: UniformDelivery[];
+  discards?: UniformDiscard[];
+}): Promise<UniformSummary> {
   const [items, deliveries, discards] = await Promise.all([
-    getUniformItems(),
-    getUniformDeliveries(),
-    getUniformDiscards()
+    existing?.items ? Promise.resolve(existing.items) : getUniformItems(),
+    existing?.deliveries ? Promise.resolve(existing.deliveries) : getUniformDeliveries(),
+    existing?.discards ? Promise.resolve(existing.discards) : getUniformDiscards()
   ]);
 
   const totalStockItems = items.reduce((acc, i) => acc + i.currentQuantity, 0);
@@ -810,8 +814,8 @@ export async function deleteMaintenanceRecord(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getMaintenanceSummary(): Promise<MaintenanceSummary> {
-  const records = await getMaintenanceRecords();
+export async function getMaintenanceSummary(existingRecords?: MaintenanceRecord[]): Promise<MaintenanceSummary> {
+  const records = existingRecords || await getMaintenanceRecords();
   const currentMonthStr = new Date().toISOString().substring(0, 7);
   const monthRecords = records.filter(r => r.executionDate && r.executionDate.startsWith(currentMonthStr));
 
@@ -915,8 +919,16 @@ export async function getOperationalDashboardSummary(): Promise<OperationalDashb
       activeCount: activeFixedBills.length,
       dueNext7DaysCount: dueNext7.length,
       dueNext7DaysAmount: dueNext7.reduce((acc, b) => acc + (Number(b.defaultAmount) || 0), 0)
+    },
+    _rawData: {
+      employees,
+      tasks,
+      cleaning,
+      maintenance,
+      uniforms,
+      fixedBills
     }
-  };
+  } as any;
 }
 
 // --- 7. SETTINGS ---

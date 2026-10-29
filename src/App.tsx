@@ -146,6 +146,13 @@ export default function App() {
         case 'dashboard': {
           const res = await getOperationalDashboardSummary();
           setOperationalSummary(res);
+          const raw = (res as any)?._rawData;
+          if (raw) {
+            if (raw.employees) setEmployees(raw.employees);
+            if (raw.tasks) setTasks(raw.tasks);
+            if (raw.cleaning) setCleaningProducts(raw.cleaning);
+            if (raw.fixedBills) setFixedBills(raw.fixedBills);
+          }
           break;
         }
         case 'tasks': {
@@ -165,18 +172,23 @@ export default function App() {
           break;
         }
         case 'maintenance': {
-          const [resMaint, resSum] = await Promise.all([getMaintenanceRecords(), getMaintenanceSummary()]);
+          const resMaint = await getMaintenanceRecords();
+          const resSum = await getMaintenanceSummary(resMaint);
           setMaintenanceRecords(resMaint);
           setMaintenanceSummary(resSum);
           break;
         }
         case 'uniforms': {
-          const [resItems, resDeliv, resDisc, resSum] = await Promise.all([
+          const [resItems, resDeliv, resDisc] = await Promise.all([
             getUniformItems(),
             getUniformDeliveries(),
-            getUniformDiscards(),
-            getUniformSummary()
+            getUniformDiscards()
           ]);
+          const resSum = await getUniformSummary({
+            items: resItems,
+            deliveries: resDeliv,
+            discards: resDisc
+          });
           setUniformItems(resItems);
           setUniformDeliveries(resDeliv);
           setUniformDiscards(resDisc);
@@ -190,12 +202,12 @@ export default function App() {
           break;
         }
         case 'fixed_bills': {
-          const [resFixed, resBord, resDash] = await Promise.all([
-            getFixedBills(),
+          const [resBord, resDash] = await Promise.all([
             getBorderos(),
             getOperationalDashboardSummary()
           ]);
-          setFixedBills(resFixed);
+          const raw = (resDash as any)?._rawData;
+          if (raw?.fixedBills) setFixedBills(raw.fixedBills);
           setBorderos(resBord);
           setOperationalSummary(resDash);
           break;
@@ -216,15 +228,11 @@ export default function App() {
     }
   };
 
-  // Carregamento inicial único de metadados leves para badges da barra lateral
+  // Carregamento inicial complementar (sem duplicar as tabelas que o Dashboard já carrega)
   useEffect(() => {
-    getEmployees(false).then(setEmployees).catch(() => {});
-    getTasks().then(setTasks).catch(() => {});
-    getCleaningProducts().then(setCleaningProducts).catch(() => {});
     getRegulatoryDocuments().then(setRegulatoryDocs).catch(() => {});
     getSettings().then(setSettings).catch(() => {});
     getBorderos().then(setBorderos).catch(() => {});
-    getFixedBills().then(setFixedBills).catch(() => {});
   }, []);
 
   // Carregamento seletivo da aba ativa + polling inteligente (3 min e apenas com aba visível)
@@ -368,8 +376,9 @@ export default function App() {
   const handleAddMaintenanceRecord = async (recordData: Partial<MaintenanceRecord>) => {
     try {
       const newRec = await addMaintenanceRecord(recordData);
-      setMaintenanceRecords(prev => [newRec, ...prev]);
-      getMaintenanceSummary().then(setMaintenanceSummary);
+      const next = [newRec, ...maintenanceRecords];
+      setMaintenanceRecords(next);
+      getMaintenanceSummary(next).then(setMaintenanceSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao registrar manutenção');
@@ -379,8 +388,9 @@ export default function App() {
   const handleEditMaintenanceRecord = async (record: Partial<MaintenanceRecord>) => {
     try {
       const updated = await updateMaintenanceRecord(record);
-      setMaintenanceRecords(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
-      getMaintenanceSummary().then(setMaintenanceSummary);
+      const next = maintenanceRecords.map(r => r.id === updated.id ? { ...r, ...updated } : r);
+      setMaintenanceRecords(next);
+      getMaintenanceSummary(next).then(setMaintenanceSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao atualizar manutenção');
@@ -391,8 +401,9 @@ export default function App() {
     if (!window.confirm('Excluir este registro de manutenção?')) return;
     try {
       await deleteMaintenanceRecord(id);
-      setMaintenanceRecords(prev => prev.filter(r => r.id !== id));
-      getMaintenanceSummary().then(setMaintenanceSummary);
+      const next = maintenanceRecords.filter(r => r.id !== id);
+      setMaintenanceRecords(next);
+      getMaintenanceSummary(next).then(setMaintenanceSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao excluir manutenção');
@@ -403,8 +414,9 @@ export default function App() {
   const handleAddUniformStockItem = async (data: Partial<UniformItem>) => {
     try {
       const newItem = await addUniformItem(data);
-      setUniformItems(prev => [newItem, ...prev]);
-      getUniformSummary().then(setUniformSummary);
+      const nextItems = [newItem, ...uniformItems];
+      setUniformItems(nextItems);
+      getUniformSummary({ items: nextItems, deliveries: uniformDeliveries, discards: uniformDiscards }).then(setUniformSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao cadastrar item de uniforme');
@@ -414,8 +426,9 @@ export default function App() {
   const handleEditUniformStockItem = async (item: Partial<UniformItem>) => {
     try {
       const updated = await updateUniformItem(item);
-      setUniformItems(prev => prev.map(i => i.id === updated.id ? { ...i, ...updated } : i));
-      getUniformSummary().then(setUniformSummary);
+      const nextItems = uniformItems.map(i => i.id === updated.id ? { ...i, ...updated } : i);
+      setUniformItems(nextItems);
+      getUniformSummary({ items: nextItems, deliveries: uniformDeliveries, discards: uniformDiscards }).then(setUniformSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao atualizar item de uniforme');
@@ -426,8 +439,9 @@ export default function App() {
     if (!window.confirm('Excluir este item de uniforme?')) return;
     try {
       await deleteUniformItem(id);
-      setUniformItems(prev => prev.filter(i => i.id !== id));
-      getUniformSummary().then(setUniformSummary);
+      const nextItems = uniformItems.filter(i => i.id !== id);
+      setUniformItems(nextItems);
+      getUniformSummary({ items: nextItems, deliveries: uniformDeliveries, discards: uniformDiscards }).then(setUniformSummary);
     } catch (e) {
       console.error(e);
       alert('Erro ao excluir uniforme');
