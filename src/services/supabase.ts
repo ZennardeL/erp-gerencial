@@ -31,7 +31,7 @@ const docFileCache: Record<string, string> = {};
 
 // Converte data URL Base64 em Blob e envia para o bucket público 'erp-documents' do Supabase Storage
 export async function uploadDocumentToStorage(
-  folder: 'regulatory' | 'employees',
+  folder: 'regulatory' | 'employees' | 'avatars',
   docId: string,
   fileName: string,
   fileDataUrl?: string | null
