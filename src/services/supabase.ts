@@ -159,11 +159,14 @@ export async function getEmployeeDocumentFileUrl(docId: string): Promise<string>
 
 export async function createEmployee(data: Partial<Employee>): Promise<Employee> {
   const id = `emp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const avatarStorageUrl = data.avatarUrl
+    ? await uploadDocumentToStorage('avatars', id, 'avatar.jpg', data.avatarUrl)
+    : null;
   const record = {
     id,
     name: data.name || 'Novo Colaborador',
     role: data.role || 'RECEPCAO',
-    avatar_url: data.avatarUrl || null,
+    avatar_url: avatarStorageUrl,
     cpf: data.cpf || null,
     rg: data.rg || null,
     cref_number: data.crefNumber || null,
@@ -182,6 +185,7 @@ export async function createEmployee(data: Partial<Employee>): Promise<Employee>
     id,
     name: record.name,
     role: record.role as any,
+    avatarUrl: avatarStorageUrl || '',
     documents: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -192,7 +196,12 @@ export async function updateEmployee(emp: Partial<Employee>): Promise<Employee> 
   const updateData: any = { updated_at: new Date().toISOString() };
   if (emp.name !== undefined) updateData.name = emp.name;
   if (emp.role !== undefined) updateData.role = emp.role;
-  if (emp.avatarUrl !== undefined) updateData.avatar_url = emp.avatarUrl;
+  if (emp.avatarUrl !== undefined) {
+    updateData.avatar_url = emp.avatarUrl
+      ? await uploadDocumentToStorage('avatars', emp.id || `emp_${Date.now()}`, 'avatar.jpg', emp.avatarUrl)
+      : null;
+    emp.avatarUrl = updateData.avatar_url || '';
+  }
   if (emp.cpf !== undefined) updateData.cpf = emp.cpf;
   if (emp.rg !== undefined) updateData.rg = emp.rg;
   if (emp.crefNumber !== undefined) updateData.cref_number = emp.crefNumber;
