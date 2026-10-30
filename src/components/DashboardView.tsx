@@ -52,19 +52,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     operacional: true
   });
 
-  if (!summary) {
-    return (
-      <div className="flex items-center justify-center h-64 text-slate-400">
-        <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        Carregando dados operacionais da academia...
-      </div>
-    );
-  }
-
-  const { kpis, expiringDocumentsList, recentMaintenance, urgentTasks, criticalCleaningProducts, coletivasSummary, pdvSummary, fixedBillsSummary } = summary;
-
-  // Geração automática do Resumo Executivo para WhatsApp do Patrão
+  // Geração automática do Resumo Executivo para WhatsApp do Patrão (Hook sempre antes do early return!)
   const whatsappReportText = useMemo(() => {
+    if (!summary) return '';
+    const { kpis, criticalCleaningProducts, coletivasSummary, pdvSummary, fixedBillsSummary } = summary;
     const now = new Date();
     const todayDay = now.getDate();
     const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), todayDay + 1);
@@ -173,6 +164,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return lines.join('\n');
   }, [summary, fixedBills, borderos, waSections]);
+
+  if (!summary) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-400">
+        <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+        Carregando dados operacionais da academia...
+      </div>
+    );
+  }
+
+  const { kpis, expiringDocumentsList, recentMaintenance, urgentTasks, criticalCleaningProducts, coletivasSummary, pdvSummary, fixedBillsSummary } = summary;
 
   const handleCopyWhatsApp = () => {
     navigator.clipboard.writeText(whatsappReportText);
